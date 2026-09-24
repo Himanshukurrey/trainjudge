@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import __version__, mlx_backend, runs
+from trainjudge import __version__, mlx_backend, replay, runs
 from trainjudge.dataset_audit import LOW_QUALITY, AuditReport, audit_dataset
 
 
@@ -45,6 +46,7 @@ def prepare_run(
     keep_low_quality: bool = False,
     allow_sensitive_data: bool = False,
     goal: str | None = None,
+    replay_count: int = 0,
 ) -> PreparedRun:
     audit = audit_dataset(dataset)
     if audit.sensitive and not allow_sensitive_data:
@@ -61,10 +63,13 @@ def prepare_run(
     if not keep_low_quality:
         dropped[LOW_QUALITY] = counts[LOW_QUALITY]
 
+    if not 0 <= replay_count <= replay.max_replay():
+        raise runs.RunError(f"--replay must be between 0 and {replay.max_replay()}")
+    train_size = len(splits.train) + replay_count
     if iters is None:
-        iters = max(1, math.ceil(epochs * len(splits.train) / batch_size))
+        iters = max(1, math.ceil(epochs * train_size / batch_size))
     else:
-        epochs = round(iters * batch_size / len(splits.train), 2)
+        epochs = round(iters * batch_size / train_size, 2)
     config = mlx_backend.LoraConfig(
         model=runs.resolve_model(model),
         iters=iters,
@@ -106,6 +111,7 @@ def prepare_run(
             "valid_fraction": valid_fraction,
             "test_fraction": test_fraction,
             "seed": seed,
+            "replay": {"requested": replay_count, "added": 0},
         },
         "config": {**asdict(config), "epochs": epochs},
         "command": command,
@@ -113,6 +119,34 @@ def prepare_run(
     }
     runs.write_run_json(run_dir, record)
     return PreparedRun(run_dir, audit, splits, config, command, dropped, epochs, record)
+
+
+def add_replay(
+    prepared: PreparedRun,
+    generate=mlx_backend.generate_outputs,
+    on_progress=lambda done, total: None,
+) -> int:
+    """Append base-model answers to general prompts to the training split."""
+    count = prepared.record["prep"]["replay"]["requested"]
+    if not count:
+        return 0
+    prompts = replay.replay_prompts(count)
+    outputs = generate(
+        prepared.config.model,
+        prompts,
+        decoding=mlx_backend.DecodingConfig(max_tokens=256),
+        on_progress=on_progress,
+    )
+    rows = [{"prompt": p, "completion": o.strip()} for p, o in zip(prompts, outputs) if o.strip()]
+    with (prepared.run_dir / "data" / "train.jsonl").open("a", encoding="utf-8") as f:
+        f.writelines(json.dumps(r) + "\n" for r in rows)
+    prepared.record["prep"]["replay"] = {
+        "requested": count,
+        "added": len(rows),
+        "source": "base-model answers to trainjudge's general replay prompts",
+    }
+    runs.write_run_json(prepared.run_dir, prepared.record)
+    return len(rows)
 
 
 def run_training(prepared: PreparedRun, on_event=lambda e: None) -> mlx_backend.TrainingSummary:

@@ -16,7 +16,9 @@ from trainjudge.dataset_audit import (
 
 
 def write_jsonl(path, rows):
-    path.write_text("\n".join(r if isinstance(r, str) else json.dumps(r) for r in rows) + "\n")
+    path.write_text(
+        "\n".join(r if isinstance(r, str) else json.dumps(r) for r in rows) + "\n", encoding="utf-8"
+    )
     return path
 
 
@@ -29,8 +31,13 @@ def statuses(report):
 
 
 def test_clean_rows(tmp_path):
-    path = write_jsonl(tmp_path / "d.jsonl", [pc("List users", "SELECT * FROM users;"),
-                                              pc("Count users", "SELECT COUNT(*) FROM users;")])
+    path = write_jsonl(
+        tmp_path / "d.jsonl",
+        [
+            pc("List users", "SELECT * FROM users;"),
+            pc("Count users", "SELECT COUNT(*) FROM users;"),
+        ],
+    )
     report = audit_dataset(path)
     assert report.format == "completions"
     assert report.counts() == {CLEAN: 2, DUPLICATE: 0, LOW_QUALITY: 0, MALFORMED: 0}
@@ -105,13 +112,25 @@ def test_short_answer_is_not_an_echo(tmp_path):
 
 def test_chat_format(tmp_path):
     rows = [
-        {"messages": [{"role": "user", "content": "List users"},
-                      {"role": "assistant", "content": "SELECT * FROM users;"}]},
+        {
+            "messages": [
+                {"role": "user", "content": "List users"},
+                {"role": "assistant", "content": "SELECT * FROM users;"},
+            ]
+        },
         {"messages": [{"role": "user", "content": "List users"}]},
-        {"messages": [{"role": "robot", "content": "hi"},
-                      {"role": "assistant", "content": "SELECT 1;"}]},
-        {"messages": [{"role": "user", "content": "List users"},
-                      {"role": "assistant", "content": "SELECT * FROM users;"}]},
+        {
+            "messages": [
+                {"role": "robot", "content": "hi"},
+                {"role": "assistant", "content": "SELECT 1;"},
+            ]
+        },
+        {
+            "messages": [
+                {"role": "user", "content": "List users"},
+                {"role": "assistant", "content": "SELECT * FROM users;"},
+            ]
+        },
     ]
     report = audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows))
     assert report.format == "chat"
@@ -133,7 +152,7 @@ def test_percentages_sum_to_100(tmp_path):
 
 def test_empty_file(tmp_path):
     path = tmp_path / "d.jsonl"
-    path.write_text("")
+    path.write_text("", encoding="utf-8")
     report = audit_dataset(path)
     assert report.total == 0
     assert report.format is None
@@ -145,7 +164,7 @@ def test_write_clean_keeps_low_quality_by_default(tmp_path):
     report = audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows))
     out = tmp_path / "clean.jsonl"
     assert write_clean_dataset(report, out) == 2
-    assert [json.loads(line)["prompt"] for line in out.read_text().splitlines()] == ["a", "b"]
+    assert [json.loads(line)["prompt"] for line in out.read_text(encoding="utf-8").splitlines()] == ["a", "b"]
     assert write_clean_dataset(report, out, drop_low_quality=True) == 1
 
 
@@ -171,7 +190,7 @@ def test_cli_write_clean(tmp_path):
     result = CliRunner().invoke(main, ["audit", str(path), "--write-clean", str(out)])
     assert result.exit_code == 0
     assert "Wrote 1 rows" in result.output
-    assert len(out.read_text().splitlines()) == 1
+    assert len(out.read_text(encoding="utf-8").splitlines()) == 1
 
 
 def test_cli_refuses_to_overwrite_input(tmp_path):

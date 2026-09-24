@@ -25,7 +25,7 @@ def test_rows(run_dir: Path, limit: int | None = None) -> list[dict]:
     path = run_dir / "data" / "test.jsonl"
     if not path.exists():
         raise runs.RunError(f"{path} not found; is {run_dir} a trainjudge run directory?")
-    rows = [json.loads(line) for line in path.open()]
+    rows = [json.loads(line) for line in path.open(encoding="utf-8")]
     if rows and "completion" not in rows[0]:
         raise runs.RunError("SQL eval needs prompt/completion rows with gold SQL completions")
     return rows[:limit] if limit else rows
@@ -53,8 +53,13 @@ def evaluate_target(
     decoding = decoding or mlx_backend.DecodingConfig()
 
     start = time.monotonic()
-    outputs = generate(record["model"], [r["prompt"] for r in rows], adapter_path=adapter,
-                       decoding=decoding, on_progress=on_progress)
+    outputs = generate(
+        record["model"],
+        [r["prompt"] for r in rows],
+        adapter_path=adapter,
+        decoding=decoding,
+        on_progress=on_progress,
+    )
     report = eval_sql.evaluate(db, rows, outputs)
     result = {
         "target": target,
@@ -62,8 +67,11 @@ def evaluate_target(
         "adapter_path": str(adapter) if adapter else None,
         "task": "sql",
         "database": {"path": str(db_path), "sha256": runs.file_sha256(db_path)},
-        "test_split": {"path": str(run_dir / "data" / "test.jsonl"), "rows": len(rows),
-                       "limited": limit is not None},
+        "test_split": {
+            "path": str(run_dir / "data" / "test.jsonl"),
+            "rows": len(rows),
+            "limited": limit is not None,
+        },
         "decoding": asdict(decoding),
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "duration_s": round(time.monotonic() - start, 1),
@@ -72,7 +80,7 @@ def evaluate_target(
 
     eval_dir = run_dir / "eval"
     eval_dir.mkdir(exist_ok=True)
-    (eval_dir / f"{target}.json").write_text(json.dumps(result, indent=2) + "\n")
+    (eval_dir / f"{target}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
     record["task"] = {"type": "sql", "database": str(db_path)}
     record.setdefault("evals", {})[target] = {
@@ -90,7 +98,7 @@ def eval_path(run_dir: Path, target: str, regression: bool = False) -> Path:
 
 def load_eval(run_dir: Path, target: str, regression: bool = False) -> dict | None:
     path = eval_path(run_dir, target, regression)
-    return json.loads(path.read_text()) if path.exists() else None
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
 def evaluate_regression(
@@ -111,8 +119,13 @@ def evaluate_regression(
     items = regression_check.build_suite()
     decoding = decoding or mlx_backend.DecodingConfig(max_tokens=256)
     start = time.monotonic()
-    outputs = generate(record["model"], [i.prompt for i in items], adapter_path=adapter,
-                       decoding=decoding, on_progress=on_progress)
+    outputs = generate(
+        record["model"],
+        [i.prompt for i in items],
+        adapter_path=adapter,
+        decoding=decoding,
+        on_progress=on_progress,
+    )
     result = {
         "target": target,
         "model": record["model"],
@@ -125,5 +138,5 @@ def evaluate_regression(
     }
     path = eval_path(run_dir, target, regression=True)
     path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(result, indent=2) + "\n")
+    path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return result

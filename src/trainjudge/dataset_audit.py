@@ -177,9 +177,7 @@ def audit_dataset(path: str | Path) -> AuditReport:
     )
 
 
-def write_clean_dataset(
-    report: AuditReport, out_path: str | Path, drop_low_quality: bool = False
-) -> int:
+def write_clean_dataset(report: AuditReport, out_path: str | Path, drop_low_quality: bool = False) -> int:
     """Write rows that aren't duplicates or malformed; return how many were kept."""
     drop = {DUPLICATE, MALFORMED} | ({LOW_QUALITY} if drop_low_quality else set())
     kept = [r for r in report.rows if r.status not in drop]
@@ -223,8 +221,10 @@ def format_report(report: AuditReport, max_examples: int = 5) -> str:
         lines += [
             "",
             "Warnings",
-            (f"  {report.conflicting_prompts:,} prompts have conflicting completions "
-            "(same prompt, different answer)"),
+            (
+                f"  {report.conflicting_prompts:,} prompts have conflicting completions "
+                "(same prompt, different answer)"
+            ),
         ]
     return "\n".join(lines)
 
@@ -236,8 +236,7 @@ def format_sensitive(report: AuditReport) -> list[str]:
         sample = ", ".join(map(str, line_nos[:3])) + (", …" if len(line_nos) > 3 else "")
         out.append(f"  ⚠ {kind}: {len(line_nos):,} rows  (line {sample})")
     out.append(
-        "  Mask or remove these before training. Fine-tuned models can memorize and repeat "
-        "training data."
+        "  Mask or remove these before training. Fine-tuned models can memorize and repeat training data."
     )
     return out
 

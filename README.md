@@ -172,7 +172,7 @@ saved evals where possible, and issues one of three verdicts:
 
 | Verdict | When |
 |---|---|
-| ✓ IMPROVED | Task accuracy rose by at least 3 points (`--min-improvement`), the gain is statistically significant (exact McNemar test on the same held-out examples, p < 0.05), and no regression category dropped more than 5 points (`--regression-tolerance`) |
+| ✓ IMPROVED | Task accuracy rose by at least 3 points (`--min-improvement`), the gain is statistically significant (exact McNemar test on the same held-out examples, p < 0.05), and no regression category dropped more than 5 points (`--regression-tolerance`) while losing at least 2 items |
 | ⚠ REGRESSED | The task improved, but general capability got worse. Don't deploy as-is. |
 | ✗ REJECTED | The task didn't improve meaningfully, whatever the training loss did |
 

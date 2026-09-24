@@ -108,7 +108,7 @@ def extract_sql(output: str) -> str | None:
     m = next((m for r in _SQL_START_RES if (m := r.search(text))), None)
     if not m:
         return None
-    sql = text[m.start():]
+    sql = text[m.start() :]
     sql = re.split(r"\n\s*\n", sql, maxsplit=1)[0]  # stop at the first blank line
     if ";" in sql:
         sql = sql[: sql.index(";") + 1]
@@ -123,7 +123,7 @@ class Database:
         self.path = Path(path)
         self.conn = sqlite3.connect(":memory:")
         if self.path.suffix == ".sql":
-            self.conn.executescript(self.path.read_text())
+            self.conn.executescript(self.path.read_text(encoding="utf-8"))
         else:
             source = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
             source.backup(self.conn)
@@ -205,9 +205,7 @@ def evaluate(db: Database, rows: list[dict], outputs: list[str]) -> EvalReport:
     """Score model outputs against prompt/completion rows whose completion is gold SQL."""
     if len(rows) != len(outputs):
         raise ValueError(f"{len(rows)} rows but {len(outputs)} outputs")
-    return EvalReport(
-        [score_example(db, r["prompt"], r["completion"], o) for r, o in zip(rows, outputs)]
-    )
+    return EvalReport([score_example(db, r["prompt"], r["completion"], o) for r, o in zip(rows, outputs)])
 
 
 def _normalize_row(row: tuple) -> tuple:

@@ -110,7 +110,7 @@ def write_config(cfg: LoraConfig, run_dir: Path) -> Path:
         "lora_parameters": {"rank": cfg.rank, "scale": cfg.scale, "dropout": cfg.dropout},
     }
     path = run_dir / "mlx_config.yaml"
-    path.write_text(json.dumps(config, indent=2) + "\n")
+    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
     return path
 
 
@@ -151,11 +151,17 @@ def train(
     events: list[dict] = []
     start = time.monotonic()
     with (
-        (logs / "mlx.log").open("w") as raw_log,
-        (logs / "training_log.jsonl").open("w") as event_log,
+        (logs / "mlx.log").open("w", encoding="utf-8") as raw_log,
+        (logs / "training_log.jsonl").open("w", encoding="utf-8") as event_log,
     ):
         proc = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            encoding="utf-8",
+            errors="replace",
         )
         assert proc.stdout is not None
         for line in proc.stdout:
@@ -170,7 +176,7 @@ def train(
     duration = time.monotonic() - start
 
     if returncode != 0:
-        tail = "".join((logs / "mlx.log").read_text().splitlines(keepends=True)[-20:])
+        tail = "".join((logs / "mlx.log").read_text(encoding="utf-8").splitlines(keepends=True)[-20:])
         raise TrainingFailed(f"mlx-lm exited with status {returncode}", tail)
     return summarize(events, duration)
 

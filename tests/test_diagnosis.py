@@ -24,7 +24,7 @@ def run(name, goal, **kwargs):
 
 
 def write_jsonl(path, rows):
-    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
     return path
 
 
@@ -53,16 +53,23 @@ def test_bfsi_transactions_is_a_format_gap_with_sensitive_data():
     assert d.classification == FORMAT
     assert d.profile.output_shape == "json"
     assert d.bfsi
-    assert set(d.audit.sensitive) == {"card number", "Aadhaar number", "PAN", "UPI ID",
-                                      "phone number"}
+    assert set(d.audit.sensitive) == {
+        "card number",
+        "Aadhaar number",
+        "PAN",
+        "UPI ID",
+        "phone number",
+    }
     text = " ".join(format_diagnosis(d).split())
     assert "Sensitive data in 14 rows" in text
     assert "DPDP Act 2023" in text
 
 
 def test_bfsi_loan_faq_is_a_knowledge_gap_with_regulated_facts():
-    d = run("bfsi_loan_faq",
-            "answer customer questions about our loan and FD interest rates and charges")
+    d = run(
+        "bfsi_loan_faq",
+        "answer customer questions about our loan and FD interest rates and charges",
+    )
     assert d.classification == KNOWLEDGE
     assert d.bfsi
     assert "interest rates" in d.regulated_terms
@@ -79,17 +86,18 @@ def test_cost_goal_is_a_distillation_candidate():
 
 
 def test_small_dataset_without_prompting_is_a_prompt_gap(tmp_path):
-    rows = [{"prompt": f"Reply in JSON for item {i}", "completion": json.dumps({"id": i})}
-            for i in range(20)]
-    d = diagnose("make it reply in our JSON format", audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows)),
-                 tried_prompting=False)
+    rows = [{"prompt": f"Reply in JSON for item {i}", "completion": json.dumps({"id": i})} for i in range(20)]
+    d = diagnose(
+        "make it reply in our JSON format",
+        audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows)),
+        tried_prompting=False,
+    )
     assert d.classification == PROMPT
     assert not d.fine_tune_recommended
 
 
 def test_tried_prompting_counts_against_prompt_gap(tmp_path):
-    rows = [{"prompt": f"Reply in JSON for item {i}", "completion": json.dumps({"id": i})}
-            for i in range(20)]
+    rows = [{"prompt": f"Reply in JSON for item {i}", "completion": json.dumps({"id": i})} for i in range(20)]
     audit = audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows))
     goal = "make it reply in our JSON format"
     assert diagnose(goal, audit, tried_prompting=True).classification == FORMAT
@@ -97,9 +105,13 @@ def test_tried_prompting_counts_against_prompt_gap(tmp_path):
 
 def test_grounded_answers_are_format_not_knowledge(tmp_path):
     context = " ".join(f"Clause {i}: the notice period is {i} days for plan {i}." for i in range(20))
-    rows = [{"prompt": f"{context}\nQuestion: what is the notice period for plan {i}?",
-             "completion": f"The notice period for plan {i} is {i} days."}
-            for i in range(60)]
+    rows = [
+        {
+            "prompt": f"{context}\nQuestion: what is the notice period for plan {i}?",
+            "completion": f"The notice period for plan {i} is {i} days.",
+        }
+        for i in range(60)
+    ]
     d = diagnose("answer questions about contracts", audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows)))
     assert d.profile.grounded
     assert d.classification != KNOWLEDGE
@@ -130,8 +142,15 @@ def test_goal_terms_match_whole_words_only():
 
 def test_cli_diagnose_text_and_json():
     runner = CliRunner()
-    args = ["diagnose", "--dataset", str(DEMO / "policy_docs" / "data.jsonl"),
-            "--model", "Qwen3-0.6B", "--goal", "answer from our policy documents"]
+    args = [
+        "diagnose",
+        "--dataset",
+        str(DEMO / "policy_docs" / "data.jsonl"),
+        "--model",
+        "Qwen3-0.6B",
+        "--goal",
+        "answer from our policy documents",
+    ]
 
     result = runner.invoke(main, args)
     assert result.exit_code == 0
@@ -146,10 +165,18 @@ def test_cli_diagnose_text_and_json():
     assert data["audit"]["counts"]["duplicate"] == 12
 
 
-@pytest.mark.parametrize("flag, expected", [("--tried-prompting", True),
-                                            ("--not-tried-prompting", False)])
+@pytest.mark.parametrize("flag, expected", [("--tried-prompting", True), ("--not-tried-prompting", False)])
 def test_cli_tried_prompting_flag(flag, expected):
-    args = ["diagnose", "--dataset", str(DEMO / "sql_generation" / "data.jsonl"),
-            "--model", "m", "--goal", "sql", "--json", flag]
+    args = [
+        "diagnose",
+        "--dataset",
+        str(DEMO / "sql_generation" / "data.jsonl"),
+        "--model",
+        "m",
+        "--goal",
+        "sql",
+        "--json",
+        flag,
+    ]
     result = CliRunner().invoke(main, args)
     assert json.loads(result.output)["tried_prompting"] is expected

@@ -31,9 +31,7 @@ N_DUPLICATE = 36
 N_LOW_QUALITY = 12
 N_MALFORMED = 8
 
-INSTRUCTION = (
-    "Categorize this bank transaction. Reply with JSON: category, merchant, channel, direction."
-)
+INSTRUCTION = "Categorize this bank transaction. Reply with JSON: category, merchant, channel, direction."
 
 MERCHANTS = {
     "groceries": ["FreshKart", "DailyBasket", "GreenLeaf Mart"],
@@ -69,8 +67,21 @@ def _label(category, merchant, channel, direction) -> str:
 
 def transaction(rng: random.Random) -> tuple[str, str]:
     kind = rng.choices(
-        ["upi", "pos", "ecom", "salary", "emi", "sip", "insurance", "atm", "imps", "rent",
-         "bill", "charges", "interest"],
+        [
+            "upi",
+            "pos",
+            "ecom",
+            "salary",
+            "emi",
+            "sip",
+            "insurance",
+            "atm",
+            "imps",
+            "rent",
+            "bill",
+            "charges",
+            "interest",
+        ],
         weights=[14, 8, 6, 4, 4, 3, 2, 4, 4, 3, 4, 2, 2],
     )[0]
     rrn = _digits(rng, 12, "3456")
@@ -81,53 +92,85 @@ def transaction(rng: random.Random) -> tuple[str, str]:
         merchant = rng.choice(MERCHANTS[category])
         if kind == "upi":
             note = rng.choice(["Payment", "UPI", "Order", "Pay to merchant"])
-            return (f"UPI/DR/{rrn}/{merchant.upper()}/{bank}/{note}",
-                    _label(category, merchant, "UPI", "debit"))
+            return (
+                f"UPI/DR/{rrn}/{merchant.upper()}/{bank}/{note}",
+                _label(category, merchant, "UPI", "debit"),
+            )
         if kind == "pos":
-            return ((f"POS XXXXXXXXXXXX{_digits(rng, 4, '0123456789')} "
-                    f"{_code(merchant)}*{rng.choice(CITIES)} {rng.randint(1, 28):02d}{month}"),
-                    _label(category, merchant, "CARD_POS", "debit"))
-        return (f"ECOM PUR/{_code(merchant)}.IN/{_digits(rng, 10, '12345')}",
-                _label(category, merchant, "CARD_ECOM", "debit"))
+            return (
+                (
+                    f"POS XXXXXXXXXXXX{_digits(rng, 4, '0123456789')} "
+                    f"{_code(merchant)}*{rng.choice(CITIES)} {rng.randint(1, 28):02d}{month}"
+                ),
+                _label(category, merchant, "CARD_POS", "debit"),
+            )
+        return (
+            f"ECOM PUR/{_code(merchant)}.IN/{_digits(rng, 10, '12345')}",
+            _label(category, merchant, "CARD_ECOM", "debit"),
+        )
     if kind == "salary":
         employer = rng.choice(EMPLOYERS)
-        return (f"NEFT CR-{bank}N5{_digits(rng, 13, '12345')}-{employer.upper()}-SALARY {month}",
-                _label("salary", employer, "NEFT", "credit"))
+        return (
+            f"NEFT CR-{bank}N5{_digits(rng, 13, '12345')}-{employer.upper()}-SALARY {month}",
+            _label("salary", employer, "NEFT", "credit"),
+        )
     if kind == "emi":
         lender = rng.choice(LENDERS)
-        return (f"NACH/DR/{lender.upper()}/LN{_digits(rng, 11, '12345')}",
-                _label("emi", lender, "NACH", "debit"))
+        return (
+            f"NACH/DR/{lender.upper()}/LN{_digits(rng, 11, '12345')}",
+            _label("emi", lender, "NACH", "debit"),
+        )
     if kind == "sip":
         amc = rng.choice(AMCS)
-        return (f"ACH D- {_code(amc)}-SIP-{_digits(rng, 8, '12345')}",
-                _label("mutual_fund_sip", amc, "NACH", "debit"))
+        return (
+            f"ACH D- {_code(amc)}-SIP-{_digits(rng, 8, '12345')}",
+            _label("mutual_fund_sip", amc, "NACH", "debit"),
+        )
     if kind == "insurance":
         insurer = rng.choice(INSURERS)
-        return (f"NACH/DR/{insurer.upper()}/PREMIUM/{_digits(rng, 8, '12345')}",
-                _label("insurance_premium", insurer, "NACH", "debit"))
+        return (
+            f"NACH/DR/{insurer.upper()}/PREMIUM/{_digits(rng, 8, '12345')}",
+            _label("insurance_premium", insurer, "NACH", "debit"),
+        )
     if kind == "atm":
-        return (f"ATM WDL/{bank}{_digits(rng, 5, '12345')}/{rng.choice(CITIES)}",
-                _label("cash_withdrawal", None, "ATM", "debit"))
+        return (
+            f"ATM WDL/{bank}{_digits(rng, 5, '12345')}/{rng.choice(CITIES)}",
+            _label("cash_withdrawal", None, "ATM", "debit"),
+        )
     if kind == "imps":
         person = rng.choice(PEOPLE)
         direction = rng.choice(["debit", "credit"])
         tag = "P2A" if direction == "debit" else "CR"
-        return (f"IMPS/{tag}/{rrn}/{person.upper()}/{bank}",
-                _label("transfer", None, "IMPS", direction))
+        return (
+            f"IMPS/{tag}/{rrn}/{person.upper()}/{bank}",
+            _label("transfer", None, "IMPS", direction),
+        )
     if kind == "rent":
         person = rng.choice(PEOPLE)
-        return (f"UPI/DR/{rrn}/{person.upper()}/{bank}/RENT {month}",
-                _label("rent", None, "UPI", "debit"))
+        return (
+            f"UPI/DR/{rrn}/{person.upper()}/{bank}/RENT {month}",
+            _label("rent", None, "UPI", "debit"),
+        )
     if kind == "bill":
         biller = rng.choice(BILLERS)
-        return (f"BBPS/{_code(biller)}/{_digits(rng, 11, '12345')}",
-                _label("utilities", biller, "BBPS", "debit"))
+        return (
+            f"BBPS/{_code(biller)}/{_digits(rng, 11, '12345')}",
+            _label("utilities", biller, "BBPS", "debit"),
+        )
     if kind == "charges":
-        narration = rng.choice([f"SMS ALERT CHGS QTR {month}", f"DEBIT CARD AMC {month}",
-                                "CHQ BOOK ISSUE CHGS", f"MIN BAL CHGS {month}"])
+        narration = rng.choice(
+            [
+                f"SMS ALERT CHGS QTR {month}",
+                f"DEBIT CARD AMC {month}",
+                "CHQ BOOK ISSUE CHGS",
+                f"MIN BAL CHGS {month}",
+            ]
+        )
         return narration, _label("bank_charges", None, "BANK", "debit")
-    return (f"INT.PD:{_digits(rng, 4, '0123456789')}:01{month}-30{month}",
-            _label("interest", None, "BANK", "credit"))
+    return (
+        f"INT.PD:{_digits(rng, 4, '0123456789')}:01{month}-30{month}",
+        _label("interest", None, "BANK", "credit"),
+    )
 
 
 def pii_transaction(rng: random.Random, i: int) -> tuple[str, str]:
@@ -138,24 +181,34 @@ def pii_transaction(rng: random.Random, i: int) -> tuple[str, str]:
         card = body + luhn_check_digit(body)
         category = rng.choice(list(MERCHANTS))
         merchant = rng.choice(MERCHANTS[category])
-        return (f"POS {card} {_code(merchant)}*{rng.choice(CITIES)}",
-                _label(category, merchant, "CARD_POS", "debit"))
+        return (
+            f"POS {card} {_code(merchant)}*{rng.choice(CITIES)}",
+            _label(category, merchant, "CARD_POS", "debit"),
+        )
     if kind == 1:
         body = _digits(rng, 11, "23456789")
         aadhaar = body + verhoeff_check_digit(body)
         spaced = f"{aadhaar[:4]} {aadhaar[4:8]} {aadhaar[8:]}"
-        return (f"AEPS/CW/{spaced}/{rng.choice(BANK_CODES)}",
-                _label("cash_withdrawal", None, "AEPS", "debit"))
+        return (
+            f"AEPS/CW/{spaced}/{rng.choice(BANK_CODES)}",
+            _label("cash_withdrawal", None, "AEPS", "debit"),
+        )
     if kind == 2:
         pan = "".join(rng.choice("ABCDEFGHJKLMNPRSTUVWXYZ") for _ in range(3)) + "P"
         pan += rng.choice("ABCDEFGHJKLMNPRSTUVWXYZ") + _digits(rng, 4, "123456789") + "K"
         employer = rng.choice(EMPLOYERS)
-        return ((f"NEFT CR-{rng.choice(BANK_CODES)}N5{_digits(rng, 13, '12345')}-"
-                f"{employer.upper()}-BONUS PAN {pan}"),
-                _label("salary", employer, "NEFT", "credit"))
+        return (
+            (
+                f"NEFT CR-{rng.choice(BANK_CODES)}N5{_digits(rng, 13, '12345')}-"
+                f"{employer.upper()}-BONUS PAN {pan}"
+            ),
+            _label("salary", employer, "NEFT", "credit"),
+        )
     vpa = _digits(rng, 10, "6789") + "@ybl"
-    return (f"UPI/CR/{_digits(rng, 12, '3456')}/{rng.choice(PEOPLE).upper()}/{vpa}",
-            _label("transfer", None, "UPI", "credit"))
+    return (
+        f"UPI/CR/{_digits(rng, 12, '3456')}/{rng.choice(PEOPLE).upper()}/{vpa}",
+        _label("transfer", None, "UPI", "credit"),
+    )
 
 
 def _prompt(narration: str) -> str:
@@ -187,18 +240,22 @@ def main() -> None:
         lines.append(json.dumps({"prompt": _prompt(narration), "completion": completion}))
     for i in range(N_MALFORMED):
         narration, label = transaction(rng)
-        lines.append([
-            json.dumps({"prompt": _prompt(narration)}),
-            json.dumps({"prompt": _prompt(narration), "completion": ""}),
-            json.dumps({"prompt": _prompt(narration), "completion": json.loads(label)}),
-            json.dumps({"prompt": _prompt(narration), "completion": label})[:60],
-        ][i % 4])
+        lines.append(
+            [
+                json.dumps({"prompt": _prompt(narration)}),
+                json.dumps({"prompt": _prompt(narration), "completion": ""}),
+                json.dumps({"prompt": _prompt(narration), "completion": json.loads(label)}),
+                json.dumps({"prompt": _prompt(narration), "completion": label})[:60],
+            ][i % 4]
+        )
     rng.shuffle(lines)
 
     out = HERE / "data.jsonl"
-    out.write_text("\n".join(lines) + "\n")
-    print(f"wrote {len(lines)} rows to {out} ({N_CLEAN} clean incl. {N_PII} with PII, "
-          f"{N_DUPLICATE} duplicate, {N_LOW_QUALITY} low-quality, {N_MALFORMED} malformed)")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(
+        f"wrote {len(lines)} rows to {out} ({N_CLEAN} clean incl. {N_PII} with PII, "
+        f"{N_DUPLICATE} duplicate, {N_LOW_QUALITY} low-quality, {N_MALFORMED} malformed)"
+    )
 
 
 if __name__ == "__main__":

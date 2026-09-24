@@ -37,7 +37,9 @@ def verify_run(
     if not db_path or not db_path.is_file():
         raise runs.RunError("pass --db the first time a run is verified")
 
-    progress = lambda done, total: log(f"  generated {done:,}/{total:,}")
+    def progress(done: int, total: int) -> None:
+        log(f"  generated {done:,}/{total:,}")
+
     task, regression = {}, {}
     for target in evaluation.TARGETS:
         label = "baseline" if target == evaluation.BASELINE else "fine-tuned"
@@ -47,8 +49,9 @@ def verify_run(
             task[target] = cached
         else:
             log(f"Evaluating {label} model on the held-out test split...")
-            task[target] = evaluation.evaluate_target(run_dir, target, db_path,
-                                                      on_progress=progress, generate=generate)
+            task[target] = evaluation.evaluate_target(
+                run_dir, target, db_path, on_progress=progress, generate=generate
+            )
         cached = None if rerun else evaluation.load_eval(run_dir, target, regression=True)
         if cached is not None:
             log(f"Using saved {label} regression check.")
@@ -61,8 +64,10 @@ def verify_run(
 
     training = run.get("training") or {}
     v = verdict.decide(
-        task[evaluation.BASELINE], task[evaluation.FINETUNED],
-        regression[evaluation.BASELINE], regression[evaluation.FINETUNED],
+        task[evaluation.BASELINE],
+        task[evaluation.FINETUNED],
+        regression[evaluation.BASELINE],
+        regression[evaluation.FINETUNED],
         train_loss_drop_pct=training.get("train_loss_drop_pct"),
         min_improvement=min_improvement,
         regression_tolerance=regression_tolerance,
@@ -74,23 +79,36 @@ def verify_run(
         "run": str(run_dir),
         "model": run["model"],
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "evals": {
-            t: str(evaluation.eval_path(run_dir, t)) for t in evaluation.TARGETS
-        } | {
+        "evals": {t: str(evaluation.eval_path(run_dir, t)) for t in evaluation.TARGETS}
+        | {
             f"regression_{t}": str(evaluation.eval_path(run_dir, t, regression=True))
             for t in evaluation.TARGETS
         },
     }
-    artifacts = [run_dir / "MODEL_CARD.md", run_dir / "EXPERIMENT_REPORT.md",
-                 run_dir / "eval_results.json"]
-    artifacts[0].write_text(reports.model_card(run, v, str(run_dir)))
-    artifacts[1].write_text(reports.experiment_report(
-        run, v, task[evaluation.BASELINE], task[evaluation.FINETUNED],
-        regression[evaluation.BASELINE], regression[evaluation.FINETUNED], str(run_dir),
-    ))
-    artifacts[2].write_text(json.dumps(results, indent=2) + "\n")
+    artifacts = [
+        run_dir / "MODEL_CARD.md",
+        run_dir / "EXPERIMENT_REPORT.md",
+        run_dir / "eval_results.json",
+    ]
+    artifacts[0].write_text(reports.model_card(run, v, str(run_dir)), encoding="utf-8")
+    artifacts[1].write_text(
+        reports.experiment_report(
+            run,
+            v,
+            task[evaluation.BASELINE],
+            task[evaluation.FINETUNED],
+            regression[evaluation.BASELINE],
+            regression[evaluation.FINETUNED],
+            str(run_dir),
+        ),
+        encoding="utf-8",
+    )
+    artifacts[2].write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
 
-    run["verdict"] = {"outcome": v.outcome, "reasons": v.reasons,
-                      "created_at": results["created_at"]}
+    run["verdict"] = {
+        "outcome": v.outcome,
+        "reasons": v.reasons,
+        "created_at": results["created_at"],
+    }
     runs.write_run_json(run_dir, run)
     return VerifyResult(v, artifacts)

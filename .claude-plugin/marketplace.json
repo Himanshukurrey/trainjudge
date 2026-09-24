@@ -1,0 +1,14 @@
+{
+  "name": "trainjudge",
+  "description": "TrainJudge: decide whether to fine-tune, then verify it actually worked.",
+  "owner": {
+    "name": "Himanshu Kurrey"
+  },
+  "plugins": [
+    {
+      "name": "trainjudge",
+      "source": ".",
+      "description": "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
+    }
+  ]
+}

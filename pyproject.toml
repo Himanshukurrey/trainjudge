@@ -5,30 +5,43 @@ build-backend = "hatchling.build"
 [project]
 name = "trainjudge"
 version = "0.1.0.dev0"
-description = "Decide whether to fine-tune, then verify it actually worked — on task metrics, not training loss."
+description = "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
-authors = [{ name = "Himanshu K" }]
+authors = [
+    { name = "Himanshu Kurrey", email = "himanshu98kurrey@gmail.com" },
+]
+keywords = ["fine-tuning", "lora", "mlx", "llm", "evaluation", "claude-code", "bfsi"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
 ]
 dependencies = [
     "click>=8.1",
 ]
 
 [project.optional-dependencies]
-# Local training backend (Apple Silicon only).
+# Local training and eval backend (Apple Silicon only).
 mlx = [
-    "mlx-lm>=0.20; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "mlx-lm>=0.31; sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
 dev = [
     "pytest>=8",
     "ruff>=0.6",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Himanshukurrey/trainjudge"
+Issues = "https://github.com/Himanshukurrey/trainjudge/issues"
 
 [project.scripts]
 trainjudge = "trainjudge.cli:main"
@@ -40,5 +53,11 @@ packages = ["src/trainjudge"]
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py310"
+
+[tool.ruff.lint]
+# Curated, not ruff's moving defaults (same choice as ProofKit): E/F/I catch
+# real mistakes (unused imports, undefined names, import order) and UP keeps
+# syntax modern for the py310 floor.
+select = ["E", "F", "I", "UP"]

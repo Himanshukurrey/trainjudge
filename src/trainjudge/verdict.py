@@ -3,6 +3,7 @@
 - IMPROVED:  the task metric rose by at least --min-improvement points, the gain
              is statistically significant (paired McNemar test on the same test
              examples), and no regression category dropped beyond tolerance
+             (more than --regression-tolerance points and at least 2 items net)
 - REGRESSED: the task improved, but general capability got worse; don't deploy
              as-is
 - REJECTED:  the task metric didn't improve meaningfully, whatever the loss did
@@ -21,6 +22,9 @@ REJECTED = "REJECTED"
 
 DEFAULT_MIN_IMPROVEMENT = 3.0  # accuracy points
 DEFAULT_REGRESSION_TOLERANCE = 5.0  # pass-rate points
+# A category must also lose at least this many items net. In an 18-item
+# category a single item is 5.6 points, and one item is noise-level.
+MIN_ITEMS_LOST = 2
 SIGNIFICANCE = 0.05
 
 
@@ -37,8 +41,13 @@ class RegressionResult:
         return (self.finetuned - self.baseline) * 100
 
     @property
+    def items_lost(self) -> int:
+        """Net items that went from passing to failing."""
+        return round((self.baseline - self.finetuned) * self.total)
+
+    @property
     def regressed(self) -> bool:
-        return self.delta_points < -self.tolerance
+        return self.delta_points < -self.tolerance and self.items_lost >= MIN_ITEMS_LOST
 
 
 @dataclass
@@ -96,9 +105,8 @@ class Verdict:
             "training": {"train_loss_drop_pct": self.train_loss_drop_pct},
             "thresholds": {
                 "min_improvement_points": self.min_improvement,
-                "regression_tolerance_points": (
-                    self.regressions[0].tolerance if self.regressions else None
-                ),
+                "regression_tolerance_points": (self.regressions[0].tolerance if self.regressions else None),
+                "regression_min_items_lost": MIN_ITEMS_LOST,
                 "significance": SIGNIFICANCE,
             },
         }
@@ -165,8 +173,11 @@ def decide(
 
     improved = verdict.improvement_points >= min_improvement and verdict.significant
     regressed = [r for r in regressions if r.regressed]
-    loss = (f"training loss dropped {train_loss_drop_pct:.0f}%, but "
-            if train_loss_drop_pct and train_loss_drop_pct > 0 else "")
+    loss = (
+        f"training loss dropped {train_loss_drop_pct:.0f}%, but "
+        if train_loss_drop_pct and train_loss_drop_pct > 0
+        else ""
+    )
     if not improved:
         verdict.outcome = REJECTED
         if verdict.improvement_points < min_improvement:
@@ -181,9 +192,7 @@ def decide(
             )
     elif regressed:
         verdict.outcome = REGRESSED
-        verdict.reasons.append(
-            f"task accuracy improved {verdict.improvement_points:+.1f} points"
-        )
+        verdict.reasons.append(f"task accuracy improved {verdict.improvement_points:+.1f} points")
     else:
         verdict.outcome = IMPROVED
         verdict.reasons.append(

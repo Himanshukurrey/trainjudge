@@ -1,0 +1,60 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. If the problem is with a training run, the fastest way to get it looked at is
+        to attach the run's `run.json` (and `eval_results.json` if `verify` got that far). They record the model,
+        settings, dataset hash and results, without the dataset itself. Check them for anything private before
+        attaching.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what actually happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Exact command you ran
+      placeholder: "trainjudge verify trainjudge-runs/2026-09-24-sql_generation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: run-files
+    attributes:
+      label: run.json / eval_results.json (if you have them)
+      description: Drag and drop the files here, or paste the relevant output.
+
+  - type: input
+    id: version
+    attributes:
+      label: TrainJudge version
+      description: Output of `trainjudge --version`
+    validations:
+      required: true
+
+  - type: input
+    id: mlx-version
+    attributes:
+      label: mlx-lm version (for train/eval/verify issues)
+      description: Output of `pip show mlx-lm | grep Version`
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux
+        - Windows
+        - WSL
+    validations:
+      required: true

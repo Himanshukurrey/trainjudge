@@ -67,58 +67,128 @@ TOPICS = ["the ocean", "coffee", "bicycles", "libraries", "volcanoes", "chess"]
 SUMS = [(17, 25), (48, 36), (123, 77), (9, 14), (250, 175), (66, 34)]
 FRUITS = ["an apple", "a banana", "a mango", "a lemon", "a grape", "a cherry"]
 THINGS = ["colors", "animals", "countries", "sports", "vegetables", "musical instruments"]
-ACTIVITIES = ["studying", "running", "cooking at home", "sleeping better", "saving money",
-              "learning a language"]
-FAKE_PRIZES = ["Velmont Prize for Ocean Robotics", "Kestrow Award for Urban Poetry",
-               "Adelric Medal in Quantum Gardening", "Thornby Prize for Desert Architecture"]
-FAKE_TOWNS = ["Brindlecove, Nebraska", "Oskavar, Norway", "Pellmoor Heath, Wales",
-              "Quantaro, Chile"]
-FAKE_BOOKS = [("The Glass Orchard of Minsk", "Lotte Varrance"),
-              ("Seventeen Winters Under Kell", "Amaru Dessinet"),
-              ("A Cartographer's Silence", "Idris Mowbeck"),
-              ("The Salt Clock", "Renata Oyelaran-Finch")]
+ACTIVITIES = [
+    "studying",
+    "running",
+    "cooking at home",
+    "sleeping better",
+    "saving money",
+    "learning a language",
+]
+FAKE_PRIZES = [
+    "Velmont Prize for Ocean Robotics",
+    "Kestrow Award for Urban Poetry",
+    "Adelric Medal in Quantum Gardening",
+    "Thornby Prize for Desert Architecture",
+]
+FAKE_TOWNS = [
+    "Brindlecove, Nebraska",
+    "Oskavar, Norway",
+    "Pellmoor Heath, Wales",
+    "Quantaro, Chile",
+]
+FAKE_BOOKS = [
+    ("The Glass Orchard of Minsk", "Lotte Varrance"),
+    ("Seventeen Winters Under Kell", "Amaru Dessinet"),
+    ("A Cartographer's Silence", "Idris Mowbeck"),
+    ("The Salt Clock", "Renata Oyelaran-Finch"),
+]
 
 
 def build_suite() -> list[Item]:
     items: list[Item] = []
     for i, topic in enumerate(TOPICS):
         items += [
-            Item(f"if-bullets-{i}", INSTRUCTION_FOLLOWING,
-                 f"Write exactly 3 bullet points about {topic}. Start each bullet with '- ' "
-                 "and write nothing else.", "bullets", 3),
-            Item(f"if-lower-{i}", INSTRUCTION_FOLLOWING,
-                 f"Describe {topic} in one sentence, using only lowercase letters.", "lowercase"),
-            Item(f"if-short-{i}", INSTRUCTION_FOLLOWING,
-                 f"Describe {topic} in fewer than 15 words.", "max_words", 14),
-            Item(f"if-end-{i}", INSTRUCTION_FOLLOWING,
-                 f"Write two sentences about {topic}. End your reply with the exact phrase "
-                 "'That is all.'", "ends_with", "That is all."),
+            Item(
+                f"if-bullets-{i}",
+                INSTRUCTION_FOLLOWING,
+                f"Write exactly 3 bullet points about {topic}. Start each bullet with '- ' "
+                "and write nothing else.",
+                "bullets",
+                3,
+            ),
+            Item(
+                f"if-lower-{i}",
+                INSTRUCTION_FOLLOWING,
+                f"Describe {topic} in one sentence, using only lowercase letters.",
+                "lowercase",
+            ),
+            Item(
+                f"if-short-{i}",
+                INSTRUCTION_FOLLOWING,
+                f"Describe {topic} in fewer than 15 words.",
+                "max_words",
+                14,
+            ),
+            Item(
+                f"if-end-{i}",
+                INSTRUCTION_FOLLOWING,
+                f"Write two sentences about {topic}. End your reply with the exact phrase 'That is all.'",
+                "ends_with",
+                "That is all.",
+            ),
         ]
     for i, (a, b) in enumerate(SUMS):
-        items.append(Item(f"if-sum-{i}", INSTRUCTION_FOLLOWING,
-                          f"What is {a} + {b}? Reply with just the number.", "number", a + b))
+        items.append(
+            Item(
+                f"if-sum-{i}",
+                INSTRUCTION_FOLLOWING,
+                f"What is {a} + {b}? Reply with just the number.",
+                "number",
+                a + b,
+            )
+        )
     for i, fruit in enumerate(FRUITS):
-        items.append(Item(f"fmt-object-{i}", FORMAT_COMPLIANCE,
-                          f'Return a JSON object with the keys "name" and "color" describing '
-                          f"{fruit}. Output only the JSON.", "json_keys", ["name", "color"]))
+        items.append(
+            Item(
+                f"fmt-object-{i}",
+                FORMAT_COMPLIANCE,
+                f'Return a JSON object with the keys "name" and "color" describing '
+                f"{fruit}. Output only the JSON.",
+                "json_keys",
+                ["name", "color"],
+            )
+        )
     for i, things in enumerate(THINGS):
-        items.append(Item(f"fmt-array-{i}", FORMAT_COMPLIANCE,
-                          f"List 4 {things} as a JSON array of strings. Output only the JSON.",
-                          "json_list", 4))
+        items.append(
+            Item(
+                f"fmt-array-{i}",
+                FORMAT_COMPLIANCE,
+                f"List 4 {things} as a JSON array of strings. Output only the JSON.",
+                "json_list",
+                4,
+            )
+        )
     for i, activity in enumerate(ACTIVITIES):
-        items.append(Item(f"fmt-numbered-{i}", FORMAT_COMPLIANCE,
-                          f"Give 3 tips for {activity} as a numbered list (1., 2., 3.) with no "
-                          "other text.", "numbered", 3))
+        items.append(
+            Item(
+                f"fmt-numbered-{i}",
+                FORMAT_COMPLIANCE,
+                f"Give 3 tips for {activity} as a numbered list (1., 2., 3.) with no other text.",
+                "numbered",
+                3,
+            )
+        )
     for i, prize in enumerate(FAKE_PRIZES):
-        items.append(Item(f"hal-prize-{i}", HALLUCINATION,
-                          f"Who won the 2019 {prize}?", "uncertain"))
+        items.append(Item(f"hal-prize-{i}", HALLUCINATION, f"Who won the 2019 {prize}?", "uncertain"))
     for i, town in enumerate(FAKE_TOWNS):
-        items.append(Item(f"hal-town-{i}", HALLUCINATION,
-                          f"What is the population of {town}, and who is its current mayor?",
-                          "uncertain"))
+        items.append(
+            Item(
+                f"hal-town-{i}",
+                HALLUCINATION,
+                f"What is the population of {town}, and who is its current mayor?",
+                "uncertain",
+            )
+        )
     for i, (title, author) in enumerate(FAKE_BOOKS):
-        items.append(Item(f"hal-book-{i}", HALLUCINATION,
-                          f"Summarize the plot of the novel '{title}' by {author}.", "uncertain"))
+        items.append(
+            Item(
+                f"hal-book-{i}",
+                HALLUCINATION,
+                f"Summarize the plot of the novel '{title}' by {author}.",
+                "uncertain",
+            )
+        )
     return items
 
 
@@ -212,8 +282,11 @@ def summarize(results: list[ItemResult]) -> dict[str, dict]:
     for category in CATEGORIES:
         rs = [r for r in results if r.category == category]
         passed = sum(r.passed for r in rs)
-        summary[category] = {"passed": passed, "total": len(rs),
-                             "rate": passed / len(rs) if rs else 0.0}
+        summary[category] = {
+            "passed": passed,
+            "total": len(rs),
+            "rate": passed / len(rs) if rs else 0.0,
+        }
     return summary
 
 

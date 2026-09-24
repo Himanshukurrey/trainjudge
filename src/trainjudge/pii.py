@@ -24,7 +24,9 @@ _CARD_RE = re.compile(r"(?<![\d-])(?:\d[ -]?){14,18}\d(?![\d-])")
 _CARD_LENGTHS = {15, 16, 19}
 _CARD_PREFIX_RE = re.compile(r"^(?:[2-6]|8[12])")
 _AADHAAR_SPACED_RE = re.compile(r"(?<![\d-])[2-9]\d{3}[ -]\d{4}[ -]\d{4}(?![\d-])")
-_AADHAAR_KEYWORD_RE = re.compile(r"\b(?:aadhaar|aadhar|uidai|uid)\b\D{0,20}?([2-9]\d{11})(?!\d)", re.IGNORECASE)
+_AADHAAR_KEYWORD_RE = re.compile(
+    r"\b(?:aadhaar|aadhar|uidai|uid)\b\D{0,20}?([2-9]\d{11})(?!\d)", re.IGNORECASE
+)
 _PAN_RE = re.compile(r"\b[A-Z]{3}[ABCFGHLJPTK][A-Z]\d{4}[A-Z]\b")
 _ACCOUNT_RE = re.compile(
     r"\b(?:a/c|acct|account)\s*(?:no\.?|number|num|#)?\s*(?:is\s*)?[:.\-]?\s*(\d{9,18})(?!\d)",
@@ -133,8 +135,6 @@ def scan_text(text: str) -> set[str]:
         found.add(UPI_ID)
     if _PHONE_RE.search(text):
         found.add(PHONE)
-    if any(
-        not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower()) for m in _EMAIL_RE.finditer(text)
-    ):
+    if any(not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower()) for m in _EMAIL_RE.finditer(text)):
         found.add(EMAIL)
     return found

@@ -1,12 +1,12 @@
 """Run directories: one folder per training run with its data splits, config and logs.
 
-    trainjudge-runs/2026-09-24-sql_generation/
-      run.json            what was trained, on what, and how it went
-      data/train.jsonl    training split
-      data/valid.jsonl    validation split (loss during training)
-      data/test.jsonl     held out; only `trainjudge verify` reads it
-      adapters/           LoRA weights
-      logs/               raw backend output and the parsed loss curve
+trainjudge-runs/2026-09-24-sql_generation/
+  run.json            what was trained, on what, and how it went
+  data/train.jsonl    training split
+  data/valid.jsonl    validation split (loss during training)
+  data/test.jsonl     held out; only `trainjudge verify` reads it
+  adapters/           LoRA weights
+  logs/               raw backend output and the parsed loss curve
 """
 
 from __future__ import annotations
@@ -112,7 +112,7 @@ def write_splits(run_dir: Path, splits: Splits) -> None:
     data_dir = run_dir / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     for name, rows in (("train", splits.train), ("valid", splits.valid), ("test", splits.test)):
-        (data_dir / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        (data_dir / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
 
 
 def file_sha256(path: Path) -> str:
@@ -124,8 +124,8 @@ def file_sha256(path: Path) -> str:
 
 
 def write_run_json(run_dir: Path, data: dict) -> None:
-    (run_dir / "run.json").write_text(json.dumps(data, indent=2) + "\n")
+    (run_dir / "run.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
 def read_run_json(run_dir: Path) -> dict:
-    return json.loads((run_dir / "run.json").read_text())
+    return json.loads((run_dir / "run.json").read_text(encoding="utf-8"))

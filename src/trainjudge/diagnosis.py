@@ -39,64 +39,238 @@ TITLES = {
 }
 
 KNOWLEDGE_TERMS = [
-    "document", "documents", "docs", "policy", "policies", "knowledge base", "faq", "faqs",
-    "manual", "handbook", "wiki", "internal", "facts", "latest", "up to date", "up-to-date",
-    "catalog", "catalogue", "product information", "product details", "answer questions about",
-    "answer from", "remember", "know about", "regulation", "regulations", "guidelines",
+    "document",
+    "documents",
+    "docs",
+    "policy",
+    "policies",
+    "knowledge base",
+    "faq",
+    "faqs",
+    "manual",
+    "handbook",
+    "wiki",
+    "internal",
+    "facts",
+    "latest",
+    "up to date",
+    "up-to-date",
+    "catalog",
+    "catalogue",
+    "product information",
+    "product details",
+    "answer questions about",
+    "answer from",
+    "remember",
+    "know about",
+    "regulation",
+    "regulations",
+    "guidelines",
     "terms and conditions",
 ]
 FORMAT_TERMS = [
-    "sql", "json", "schema", "format", "formatted", "structured", "extract", "extraction",
-    "parse", "classify", "classification", "categorize", "categorise", "categorization",
-    "tag", "label", "labels", "style", "tone", "convention", "conventions", "template",
-    "code", "normalize", "iso 20022", "swift", "mt103", "narration", "narrations", "triage",
+    "sql",
+    "json",
+    "schema",
+    "format",
+    "formatted",
+    "structured",
+    "extract",
+    "extraction",
+    "parse",
+    "classify",
+    "classification",
+    "categorize",
+    "categorise",
+    "categorization",
+    "tag",
+    "label",
+    "labels",
+    "style",
+    "tone",
+    "convention",
+    "conventions",
+    "template",
+    "code",
+    "normalize",
+    "iso 20022",
+    "swift",
+    "mt103",
+    "narration",
+    "narrations",
+    "triage",
 ]
 COST_TERMS = [
-    "cheaper", "cost", "costs", "latency", "faster", "speed up", "distill", "distillation",
-    "expensive", "api bill", "api costs", "smaller model", "reduce spend", "throughput",
-    "on-prem", "on-premise", "on premises", "self-host", "self-hosted", "data residency",
-    "replace gpt", "replace claude", "replace the api",
+    "cheaper",
+    "cost",
+    "costs",
+    "latency",
+    "faster",
+    "speed up",
+    "distill",
+    "distillation",
+    "expensive",
+    "api bill",
+    "api costs",
+    "smaller model",
+    "reduce spend",
+    "throughput",
+    "on-prem",
+    "on-premise",
+    "on premises",
+    "self-host",
+    "self-hosted",
+    "data residency",
+    "replace gpt",
+    "replace claude",
+    "replace the api",
 ]
 PROMPT_TERMS = [
-    "prompt", "system prompt", "few-shot", "instructions", "ignores", "sometimes",
-    "occasionally", "inconsistent",
+    "prompt",
+    "system prompt",
+    "few-shot",
+    "instructions",
+    "ignores",
+    "sometimes",
+    "occasionally",
+    "inconsistent",
 ]
 
 # Banking, financial services and insurance.
 BFSI_TERMS = [
-    "bank", "banking", "loan", "loans", "emi", "kyc", "re-kyc", "aml", "savings account",
-    "fixed deposit", "credit card", "debit card", "upi", "neft", "rtgs", "imps", "nach",
-    "insurance", "premium", "claim", "claims", "policyholder", "underwriting", "mutual fund",
-    "sip", "nav", "demat", "rbi", "sebi", "irdai", "npci", "nbfc", "fraud", "chargeback",
-    "transaction", "transactions", "cibil", "credit score", "interest rate", "repo rate",
-    "aeps", "ifsc", "forex",
+    "bank",
+    "banking",
+    "loan",
+    "loans",
+    "emi",
+    "kyc",
+    "re-kyc",
+    "aml",
+    "savings account",
+    "fixed deposit",
+    "credit card",
+    "debit card",
+    "upi",
+    "neft",
+    "rtgs",
+    "imps",
+    "nach",
+    "insurance",
+    "premium",
+    "claim",
+    "claims",
+    "policyholder",
+    "underwriting",
+    "mutual fund",
+    "sip",
+    "nav",
+    "demat",
+    "rbi",
+    "sebi",
+    "irdai",
+    "npci",
+    "nbfc",
+    "fraud",
+    "chargeback",
+    "transaction",
+    "transactions",
+    "cibil",
+    "credit score",
+    "interest rate",
+    "repo rate",
+    "aeps",
+    "ifsc",
+    "forex",
 ]
 # Facts that move with rate resets, regulator circulars and product changes.
 REGULATED_FACT_TERMS = [
-    "interest rate", "interest rates", "rates", "repo rate", "charges", "fees",
-    "schedule of charges", "kyc norms", "circular", "circulars", "master direction", "rbi",
-    "sebi", "irdai", "tds", "limits", "premium rates", "tariff",
+    "interest rate",
+    "interest rates",
+    "rates",
+    "repo rate",
+    "charges",
+    "fees",
+    "schedule of charges",
+    "kyc norms",
+    "circular",
+    "circulars",
+    "master direction",
+    "rbi",
+    "sebi",
+    "irdai",
+    "tds",
+    "limits",
+    "premium rates",
+    "tariff",
 ]
 HIGH_STAKES_TERMS = [
-    "approve", "approval", "reject", "rejection", "decline", "credit decision",
-    "loan decision", "underwriting decision", "creditworthiness", "credit scoring",
-    "claim approval", "claim settlement", "deny claims", "sanction",
+    "approve",
+    "approval",
+    "reject",
+    "rejection",
+    "decline",
+    "credit decision",
+    "loan decision",
+    "underwriting decision",
+    "creditworthiness",
+    "credit scoring",
+    "claim approval",
+    "claim settlement",
+    "deny claims",
+    "sanction",
 ]
 
 SOURCE_FIELDS = {
-    "source", "sources", "doc", "document", "doc_id", "reference", "references", "citation",
+    "source",
+    "sources",
+    "doc",
+    "document",
+    "doc_id",
+    "reference",
+    "references",
+    "citation",
     "url",
 }
 STOPWORDS = {
-    "the", "and", "for", "are", "was", "were", "with", "that", "this", "from", "your", "you",
-    "our", "has", "have", "can", "not", "all", "any", "per", "its", "into", "within", "after",
-    "before", "what", "which", "who", "how", "when", "does", "their", "them", "they", "will",
+    "the",
+    "and",
+    "for",
+    "are",
+    "was",
+    "were",
+    "with",
+    "that",
+    "this",
+    "from",
+    "your",
+    "you",
+    "our",
+    "has",
+    "have",
+    "can",
+    "not",
+    "all",
+    "any",
+    "per",
+    "its",
+    "into",
+    "within",
+    "after",
+    "before",
+    "what",
+    "which",
+    "who",
+    "how",
+    "when",
+    "does",
+    "their",
+    "them",
+    "they",
+    "will",
 }
 
 _SQL_RE = re.compile(r"^\s*(select|with|insert|update|delete|create)\b", re.IGNORECASE)
-_CODE_RE = re.compile(
-    r"^\s*(```|def |class |import |from \S+ import|function |const |let |#include|public )"
-)
+_CODE_RE = re.compile(r"^\s*(```|def |class |import |from \S+ import|function |const |let |#include|public )")
 _NUMBER_RE = re.compile(r"\d+(?:[.,]\d+)*")
 _WORD_RE = re.compile(r"[a-z0-9]+")
 
@@ -201,9 +375,7 @@ def diagnose(
     prompt_hits = _find_terms(goal, PROMPT_TERMS)
     regulated_hits = _find_terms(goal, REGULATED_FACT_TERMS)
     sample_text = " ".join(
-        f"{r.example.prompt} {r.example.completion}"
-        for r in audit.rows[:300]
-        if r.example is not None
+        f"{r.example.prompt} {r.example.completion}" for r in audit.rows[:300] if r.example is not None
     )
     bfsi_hits = _find_terms(f"{goal} {sample_text}", BFSI_TERMS)
     if not _find_terms(goal, BFSI_TERMS) and len(bfsi_hits) < 3:
@@ -226,27 +398,47 @@ def diagnose(
     n = profile.examples
     shape_pct = f"{profile.shape_share:.0%}"
     if profile.output_shape in ("sql", "json", "code", "label") and n:
-        add(FORMAT, 3, f"{shape_pct} of completions are {profile.output_shape.upper()} "
-                       "(structured output that can be checked automatically)")
+        add(
+            FORMAT,
+            3,
+            f"{shape_pct} of completions are {profile.output_shape.upper()} "
+            "(structured output that can be checked automatically)",
+        )
         if cost_hits:
             add(COST, 1, "the task is narrow and structured, which suits a small model")
     elif profile.output_shape == "prose" and n:
         if profile.grounded:
-            add(FORMAT, 2, "prompts include the source text and answers draw on it "
-                           "(the model learns to answer from given context)")
+            add(
+                FORMAT,
+                2,
+                "prompts include the source text and answers draw on it "
+                "(the model learns to answer from given context)",
+            )
             scores[KNOWLEDGE] -= 3
             evidence[KNOWLEDGE].append("answers are grounded in the prompt, not recalled (-3)")
         else:
             add(KNOWLEDGE, 1, "completions are free-form prose answers")
             if profile.novel_number_rate >= 0.3:
-                add(KNOWLEDGE, 2, f"{profile.novel_number_rate:.0%} of answers state numbers, "
-                                  "dates or amounts that aren't in the question")
+                add(
+                    KNOWLEDGE,
+                    2,
+                    f"{profile.novel_number_rate:.0%} of answers state numbers, "
+                    "dates or amounts that aren't in the question",
+                )
             if n >= 20 and profile.distinct_completions <= 0.5 * n:
-                add(KNOWLEDGE, 2, f"{n:,} prompts map to only {profile.distinct_completions:,} "
-                                  "distinct answers, so the dataset teaches recall of fixed facts")
+                add(
+                    KNOWLEDGE,
+                    2,
+                    f"{n:,} prompts map to only {profile.distinct_completions:,} "
+                    "distinct answers, so the dataset teaches recall of fixed facts",
+                )
             if profile.copy_ratio < 0.35:
-                add(KNOWLEDGE, 1, f"only {profile.copy_ratio:.0%} of answer words appear in the "
-                                  "prompt; the facts have to come from the model's weights")
+                add(
+                    KNOWLEDGE,
+                    1,
+                    f"only {profile.copy_ratio:.0%} of answer words appear in the "
+                    "prompt; the facts have to come from the model's weights",
+                )
     if profile.source_field_rate >= 0.5 and not profile.grounded:
         add(KNOWLEDGE, 2, f"{profile.source_field_rate:.0%} of rows cite a source document")
 
@@ -337,8 +529,13 @@ def format_diagnosis(d: Diagnosis) -> str:
         for e in evidence:
             lines += _wrap(e, first="  • ", rest="    ")
     if d.secondary:
-        lines += ["", *_wrap(f"Mixed goal: this also looks like a {TITLES[d.secondary]}. "
-                             f"{_mixed_hint(d.classification, d.secondary)}")]
+        lines += [
+            "",
+            *_wrap(
+                f"Mixed goal: this also looks like a {TITLES[d.secondary]}. "
+                f"{_mixed_hint(d.classification, d.secondary)}"
+            ),
+        ]
     lines += ["", f"Recommendation: {recommendation}"]
     if steps:
         lines += ["", "Try instead:" if not d.fine_tune_recommended else "Next steps:"]
@@ -362,12 +559,22 @@ def format_diagnosis(d: Diagnosis) -> str:
         lines.append(f"  {removable:,} duplicate/malformed rows would be removed before training")
 
     if d.fine_tune_recommended:
-        lines += ["", *_wrap("Next: clean the dataset (trainjudge audit --write-clean) and "
-                             "run a baseline eval before training.")]
+        lines += [
+            "",
+            *_wrap(
+                "Next: clean the dataset (trainjudge audit --write-clean) and "
+                "run a baseline eval before training."
+            ),
+        ]
     elif d.classification != UNCLEAR:
-        lines += ["", *_wrap("Want to fine-tune anyway? TrainJudge will still measure the "
-                             "result against a baseline, so the verdict will show whether "
-                             "this diagnosis held.")]
+        lines += [
+            "",
+            *_wrap(
+                "Want to fine-tune anyway? TrainJudge will still measure the "
+                "result against a baseline, so the verdict will show whether "
+                "this diagnosis held."
+            ),
+        ]
     return "\n".join(lines)
 
 
@@ -387,13 +594,19 @@ def _advice(d: Diagnosis) -> tuple[str, str, list[str]]:
             "Index the source documents with a retrieval pipeline"
             + (" (keep effective dates on each document)" if d.bfsi else ""),
             "Use the base model with retrieved context in the prompt",
-            ("If answers are still wrong, THEN consider fine-tuning the answer *format* "
-            "(citations, tone, structure) on context + question → answer pairs, not the facts"),
+            (
+                "If answers are still wrong, THEN consider fine-tuning the answer *format* "
+                "(citations, tone, structure) on context + question → answer pairs, not the facts"
+            ),
         ]
         return why, "❌ Do not fine-tune for this goal.", steps
     if d.classification == FORMAT:
-        task = {"sql": "SQL generation", "json": "Producing JSON", "code": "Code generation",
-                "label": "Labeling/classification"}.get(p.output_shape)
+        task = {
+            "sql": "SQL generation",
+            "json": "Producing JSON",
+            "code": "Code generation",
+            "label": "Labeling/classification",
+        }.get(p.output_shape)
         if task:
             why = (
                 f"{task} is a structured-output task. The model already knows the general "
@@ -421,8 +634,10 @@ def _advice(d: Diagnosis) -> tuple[str, str, list[str]]:
             "cheaper may be the right trade."
         )
         steps = [
-            ("Record the expensive model's accuracy, cost and latency on a held-out set "
-            "(that's the baseline)"),
+            (
+                "Record the expensive model's accuracy, cost and latency on a held-out set "
+                "(that's the baseline)"
+            ),
             f"Fine-tune {d.model or 'a small model'} on the expensive model's outputs",
             "Accept it only if accuracy stays within your tolerance at the lower cost",
         ]
@@ -465,27 +680,46 @@ def _bfsi_notes(d: Diagnosis) -> list[tuple[str, str]]:
     if sensitive:
         rows = {line for lines in sensitive.values() for line in lines}
         kinds = ", ".join(f"{k} ({len(v):,})" for k, v in sensitive.items())
-        notes.append(("⚠", (f"Sensitive data in {len(rows):,} rows: {kinds}. Mask or tokenize "
-                           "before training. Fine-tuned models can memorize and repeat customer "
-                           "data (see India's DPDP Act 2023 and PCI DSS). Run `trainjudge audit` "
-                           "for line numbers.")))
+        notes.append(
+            (
+                "⚠",
+                (
+                    f"Sensitive data in {len(rows):,} rows: {kinds}. Mask or tokenize "
+                    "before training. Fine-tuned models can memorize and repeat customer "
+                    "data (see India's DPDP Act 2023 and PCI DSS). Run `trainjudge audit` "
+                    "for line numbers."
+                ),
+            )
+        )
     elif d.bfsi:
-        notes.append(("✓", ("No card, Aadhaar, PAN, account, UPI, phone or email identifiers "
-                           "found.")))
+        notes.append(("✓", ("No card, Aadhaar, PAN, account, UPI, phone or email identifiers found.")))
     if d.regulated_terms:
-        notes.append(("⚠", (f"Regulated facts ({_quote(d.regulated_terms)}) change with rate "
-                           "resets and circulars. Serve them from versioned documents with "
-                           "effective dates and citations, so every answer can be traced for "
-                           "audit.")))
+        notes.append(
+            (
+                "⚠",
+                (
+                    f"Regulated facts ({_quote(d.regulated_terms)}) change with rate "
+                    "resets and circulars. Serve them from versioned documents with "
+                    "effective dates and citations, so every answer can be traced for "
+                    "audit."
+                ),
+            )
+        )
     if d.high_stakes_terms:
-        notes.append(("⚠", (f"The goal involves automated decisions "
-                           f"({_quote(d.high_stakes_terms)}). Keep a human in the loop and "
-                           "prefer interpretable models for the decision itself. Customers may "
-                           "be owed reasons for adverse outcomes, and outcomes should be checked "
-                           "for bias across customer groups.")))
+        notes.append(
+            (
+                "⚠",
+                (
+                    f"The goal involves automated decisions "
+                    f"({_quote(d.high_stakes_terms)}). Keep a human in the loop and "
+                    "prefer interpretable models for the decision itself. Customers may "
+                    "be owed reasons for adverse outcomes, and outcomes should be checked "
+                    "for bias across customer groups."
+                ),
+            )
+        )
     if d.bfsi:
-        notes.append(("•", ("Keep this diagnosis and the run's EXPERIMENT_REPORT.md for "
-                           "model-risk review.")))
+        notes.append(("•", ("Keep this diagnosis and the run's EXPERIMENT_REPORT.md for model-risk review.")))
     return notes
 
 
@@ -513,8 +747,7 @@ def _novel_numbers(example) -> bool:
 
 
 def _copy_ratio(example) -> float | None:
-    words = [w for w in _WORD_RE.findall(example.completion.lower())
-             if len(w) >= 3 and w not in STOPWORDS]
+    words = [w for w in _WORD_RE.findall(example.completion.lower()) if len(w) >= 3 and w not in STOPWORDS]
     if not words:
         return None
     prompt_words = set(_WORD_RE.findall(example.prompt.lower()))
