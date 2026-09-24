@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import click
 
-from trainjudge import __version__
+from trainjudge import __version__, dataset_audit
 
 
 def _not_yet(feature: str) -> None:
@@ -28,9 +31,36 @@ def diagnose(dataset: str, model: str, goal: str) -> None:
 
 @main.command()
 @click.argument("path", type=click.Path(exists=True, dir_okay=False))
-def audit(path: str) -> None:
+@click.option("--json", "as_json", is_flag=True, help="Print the report as JSON.")
+@click.option(
+    "--write-clean",
+    type=click.Path(dir_okay=False),
+    help="Write a copy without duplicate and malformed rows to this path.",
+)
+@click.option(
+    "--drop-low-quality", is_flag=True, help="With --write-clean, also drop low-quality rows."
+)
+def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: bool) -> None:
     """Audit a JSONL dataset for duplicates, malformed rows and low quality."""
-    _not_yet("audit")
+    if drop_low_quality and not write_clean:
+        raise click.UsageError("--drop-low-quality only applies with --write-clean.")
+    if write_clean and Path(write_clean).resolve() == Path(path).resolve():
+        raise click.UsageError("--write-clean must not overwrite the input dataset.")
+
+    report = dataset_audit.audit_dataset(path)
+    if as_json:
+        click.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        click.echo(dataset_audit.format_report(report))
+
+    if write_clean:
+        kept = dataset_audit.write_clean_dataset(report, write_clean, drop_low_quality)
+        click.echo(f"\nWrote {kept:,} rows to {write_clean}.", err=as_json)
+    elif not as_json:
+        click.echo(
+            "\nNothing was removed. Use --write-clean <path> to save a copy "
+            "without duplicate and malformed rows."
+        )
 
 
 @main.command()
