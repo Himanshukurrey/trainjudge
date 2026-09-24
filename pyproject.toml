@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trainjudge"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
 readme = "README.md"
 license = "MIT"
@@ -55,6 +55,8 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 110
 target-version = "py310"
+# Generated verify output (reports with code samples), not source.
+extend-exclude = ["demo/sql_generation/example-runs"]
 
 [tool.ruff.lint]
 # Curated, not ruff's moving defaults: E/F/I catch

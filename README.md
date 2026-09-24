@@ -1,14 +1,115 @@
 # TrainJudge
 
 Before you fine-tune, TrainJudge tells you whether fine-tuning is even the right move.
-After you fine-tune, it tells you whether it actually worked — on the task metric, not training loss.
+After you fine-tune, it tells you whether it actually worked, measured on the task and on
+held-out general skills rather than on training loss.
 
-> Status: pre-alpha (v0.1 in progress).
+![TrainJudge diagnosis: "don't fine-tune" for policy documents, "fine-tune" for SQL](demo/trainjudge-diagnose-demo.gif)
 
-## Install (dev)
+## Why
+
+Training loss going down is the least informative number in a fine-tune. A model can drive
+it to zero by memorizing its training data, get better at the task while forgetting how
+to follow basic instructions, or be fine-tuned for something that never needed it. Facts
+that change belong in retrieval; unclear instructions belong in the prompt.
+
+TrainJudge checks both ends:
+
+- **Before training:** `diagnose` sorts the request into a knowledge, format/behavior,
+  cost/latency or prompt-engineering gap, with the evidence for each score, and says
+  "don't fine-tune" when that's the right answer. The dataset audit flags duplicates,
+  malformed rows, low-quality answers and sensitive identifiers (card numbers, Aadhaar,
+  PAN, UPI IDs and more).
+- **After training:** `verify` compares the base model and the fine-tuned one on a
+  held-out test split and a built-in general-capability suite, and issues IMPROVED,
+  REGRESSED or REJECTED. Every number traces back to saved examples.
+
+## What it caught on the demo
+
+Five real LoRA fine-tunes of `Qwen3-0.6B` on the same [text-to-SQL demo](demo/sql_generation/),
+on an M-series Mac. Every one of them drove training loss down, and they earned three different verdicts.
+
+| Run | Train loss | SQL accuracy (held-out, n=130) | Instruction-following | Format compliance | Verdict |
+|---|---|---|---|---|---|
+| 520 steps, rank 16 | 0.65 → 0.001 | 30.8% → 97.7% | 77% → **47%** | 100% → **50%** | ⚠ REGRESSED |
+| 120 steps, rank 8 | 0.75 → 0.005 | 30.8% → 96.2% | 77% → **63%** | 100% → **89%** | ⚠ REGRESSED |
+| 150 steps, rank 8, `--replay 208` | 0.67 → 0.05 | 30.8% → 98.5% | 77% → 77% | 100% → 94% | ✓ IMPROVED |
+| 30 steps, lr 2e-6, rank 4 | 2.31 → 1.54 | 30.8% → 40.0% (p = 0.029) | 77% → 77% | 100% → 100% | ✓ IMPROVED |
+| 20 steps, lr 1e-6, rank 4 | 2.37 → 2.30 (val 2.39 → 2.11) | 30.8% → **24.6%** | 77% → 77% | 100% → 100% | ✗ REJECTED |
+
+The first run is the classic trap: near-zero loss and near-perfect SQL, but the model
+now answers "write 3 bullet points" with one bullet, drifts into Chinese mid-answer and
+leaks SQL habits into unrelated questions ("SELECTED: 11,000"). Mixing the base model's
+own answers to general prompts back into training (`--replay`) kept those skills intact.
+
+The last run is the opposite trap: training and validation loss both fell, so the loss
+curve looks like progress, but the model got worse at the task (11 questions lost, 3
+gained). A small but real gain from an equally light run (30 steps) still counts as
+IMPROVED, because the verdict comes from held-out results, not from how much training
+happened.
+
+Read the full reports: [regressed](demo/sql_generation/example-runs/regressed/EXPERIMENT_REPORT.md),
+[improved with replay](demo/sql_generation/example-runs/improved-with-replay/EXPERIMENT_REPORT.md)
+and [rejected](demo/sql_generation/example-runs/rejected/EXPERIMENT_REPORT.md).
+
+![TrainJudge verify: the same data gives REGRESSED without replay and IMPROVED with it](demo/trainjudge-verify-demo.gif)
+
+The demo data is synthetic and template-generated, which is why accuracy climbs so high
+so fast. The point is the verdicts, not the numbers.
+
+## Install
 
 ```bash
-pip install -e ".[dev,mlx]"   # mlx extra is Apple Silicon only
+pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"
+```
+
+`diagnose`, `audit` and `status` run anywhere. `train`, `eval` and `verify` need an Apple
+Silicon Mac (the `mlx` extra installs [mlx-lm](https://github.com/ml-explore/mlx-lm)); no
+GPU or cloud account is needed. For development:
+
+```bash
+git clone https://github.com/Himanshukurrey/trainjudge && cd trainjudge
+pip install -e ".[dev,mlx]"
+pytest
+```
+
+### Using it from Claude Code
+
+Install the bundled plugin so Claude Code runs the diagnose → train → verify workflow
+itself whenever you ask it to fine-tune something (the CLI above must be on your `PATH`).
+Run this from the terminal CLI; `/plugin` commands aren't available in the VS Code
+extension:
+
+```
+/plugin marketplace add Himanshukurrey/trainjudge
+/plugin install trainjudge@trainjudge
+```
+
+The skill tells Claude to diagnose before training, ask before starting a long job, keep
+you posted with `trainjudge status` while it runs, and report the verdict as-is.
+
+### Using it from Codex and other agents
+
+[AGENTS.md](AGENTS.md) at the repo root describes the same workflow for Codex and any
+agent that reads `AGENTS.md`. The engine is a plain CLI, so any agent that can run shell
+commands can use it.
+
+## Quickstart
+
+```bash
+# 1. Should this be fine-tuned at all?
+trainjudge diagnose --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B \
+  --goal "improve SQL generation for our shop database"
+
+# 2. Train (cleans the data, holds out a test split, LoRA via mlx-lm)
+trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B \
+  --iters 150 --learning-rate 2e-5 --rank 8 --num-layers 8 --replay 208
+
+# 3. Did it actually work?
+trainjudge verify trainjudge-runs/<run> --db demo/sql_generation/shop.sql
+
+# Anytime: what's running, and how far along is it?
+trainjudge status
 ```
 
 ## Commands
@@ -16,13 +117,15 @@ pip install -e ".[dev,mlx]"   # mlx extra is Apple Silicon only
 ```
 trainjudge diagnose --dataset <path> --model <name> --goal "<text>"
 trainjudge audit <path>
-trainjudge train --dataset <path> --model <name> --method lora
+trainjudge train --dataset <path> --model <name>
 trainjudge eval <run-dir> --db <database>
-trainjudge verify <run-dir>
+trainjudge verify <run-dir> [--db <database>]
 trainjudge status [<run-dir>]
 ```
 
-## Diagnosis: should you fine-tune at all?
+## How it works
+
+### Diagnosis: should you fine-tune at all?
 
 `trainjudge diagnose` runs before any training. It reads the goal and the dataset and
 sorts the request into one of four gaps:
@@ -70,7 +173,7 @@ Pass `--tried-prompting` or `--not-tried-prompting` if you know, and `--json` fo
 machine-readable output. The JSON output includes every signal and score so a coding
 agent can review the call.
 
-## BFSI checks
+### BFSI checks
 
 For banking, financial services and insurance datasets, diagnosis adds:
 
@@ -87,7 +190,7 @@ Two BFSI demos show both outcomes: [bfsi_transactions](demo/bfsi_transactions/)
 (transaction categorization: fine-tune, but mask the PII first) and
 [bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges: don't fine-tune, use retrieval).
 
-## Dataset audit
+### Dataset audit
 
 `trainjudge audit` reads JSONL in any of mlx-lm's formats (`prompt`/`completion`,
 `messages`, or `text`) and gives each row exactly one status:
@@ -118,7 +221,7 @@ Format:  prompt/completion
 ...
 ```
 
-## Training (local, MLX)
+### Training (local, MLX)
 
 `trainjudge train` fine-tunes with LoRA through [mlx-lm](https://github.com/ml-explore/mlx-lm)
 on an Apple Silicon Mac. No GPU or cloud account is needed.
@@ -144,7 +247,7 @@ config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adap
 learning rate 5e-5, batch 4, 2 epochs, loss on completions only. Run
 `trainjudge train --help` for all options.
 
-## Evaluation: SQL execution accuracy
+### Evaluation: SQL execution accuracy
 
 `trainjudge eval` scores the base model and the fine-tuned adapter on the run's
 held-out test split. Neither model sees these rows during training.
@@ -166,7 +269,7 @@ mode is off for both. With thinking off, the prompt ends in the same empty think
 block the training data contains. Every example's prompt, raw output, extracted SQL
 and outcome is saved to `<run>/eval/baseline.json` and `<run>/eval/finetuned.json`.
 
-## Verdict
+### Verdict
 
 `trainjudge verify <run-dir>` compares the base model and the fine-tuned adapter, reusing
 saved evals where possible, and issues one of three verdicts:
@@ -191,7 +294,7 @@ broken by fine-tuning, training details and reproduction commands), `MODEL_CARD.
 (Hugging Face–style, with the verdict) and `eval_results.json` to the run folder.
 `--strict` exits with status 1 unless the verdict is IMPROVED, which is useful in CI.
 
-## Following long jobs
+### Following long jobs
 
 `train`, `eval` and `verify` keep `<run>/status.json` up to date, so you (or a coding
 agent running the job in the background) can always see what's happening:
@@ -214,7 +317,7 @@ trainjudge-runs/2026-09-24-sql_generation-3
 - Add `--notify` to `train`, `eval` or `verify` for a desktop notification (macOS) when
   it finishes or fails.
 
-## Known limitations
+## Limitations
 
 - The diagnosis step is a heuristic classifier, not a guarantee. It can misclassify
   mixed-goal tasks (partly knowledge, partly format).
@@ -226,6 +329,31 @@ trainjudge-runs/2026-09-24-sql_generation-3
   doesn't replace a proper data-protection review.
 - The audit's low-quality checks are heuristics too. They can miss subtly wrong answers
   and can flag legitimate ones.
+- The task eval in v0.1 covers text-to-SQL only (execution accuracy). Other task types
+  can be diagnosed and trained, but `verify` can't score them yet.
+- Evaluation uses a held-out split of your own dataset. If the dataset is templated, the
+  test split shares its templates, and real-world accuracy will be lower.
+
+### The Claude Code plugin
+
+- **Verified in a real Claude Code session** (headless, with the plugin loaded via
+  `--plugin-dir`): given a plain request to fine-tune on the policy-docs demo, with no
+  mention of TrainJudge, Claude loaded the skill, checked the CLI was installed, ran
+  `diagnose`, reported the knowledge gap with its evidence and asked before training.
+- The marketplace install path (`/plugin marketplace add`) hasn't been exercised yet.
+- `AGENTS.md` follows the same workflow but hasn't been tested with Codex yet.
+
+## Roadmap
+
+- Task evals beyond SQL: JSON/field extraction (for the BFSI transaction demo) and
+  retrieval-grounded QA
+- `gemini-extension.json` and Cursor rules
+- Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
+- A Windows/CUDA training path
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.md).
 
 ## License
 

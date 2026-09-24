@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
 
 jobs:
   test:
@@ -11,7 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Pushes to main run Linux only: macOS and Windows runner minutes are billed
+        # at 10x and 2x on private repositories. Pull requests, manual runs
+        # (`gh workflow run ci.yml`) and the weekly schedule run the full matrix.
+        os: ${{ github.event_name == 'push' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "windows-latest", "macos-latest"]') }}
         python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v7

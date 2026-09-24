@@ -1,0 +1,60 @@
+{
+  "verdict": "REJECTED",
+  "reasons": [
+    "training loss dropped 3%, but task accuracy changed -6.2 points (below the 3-point bar)"
+  ],
+  "task": {
+    "metric": "sql_execution_accuracy",
+    "baseline": 0.3076923076923077,
+    "finetuned": 0.24615384615384617,
+    "improvement_points": -6.153846153846154,
+    "baseline_lenient": 0.3230769230769231,
+    "finetuned_lenient": 0.26153846153846155,
+    "scored": 130,
+    "gained": 3,
+    "lost": 11,
+    "p_value": 0.057373046875,
+    "significant": false
+  },
+  "regression": {
+    "instruction_following": {
+      "baseline": 0.7666666666666667,
+      "finetuned": 0.7666666666666667,
+      "delta_points": 0.0,
+      "total": 30,
+      "regressed": false
+    },
+    "format_compliance": {
+      "baseline": 1.0,
+      "finetuned": 1.0,
+      "delta_points": 0.0,
+      "total": 18,
+      "regressed": false
+    },
+    "hallucination": {
+      "baseline": 0.0,
+      "finetuned": 0.0,
+      "delta_points": 0.0,
+      "total": 12,
+      "regressed": false
+    }
+  },
+  "training": {
+    "train_loss_drop_pct": 2.62156448202961
+  },
+  "thresholds": {
+    "min_improvement_points": 3.0,
+    "regression_tolerance_points": 5.0,
+    "regression_min_items_lost": 2,
+    "significance": 0.05
+  },
+  "run": "trainjudge-runs/2026-09-24-sql_generation-5",
+  "model": "Qwen/Qwen3-0.6B",
+  "created_at": "2026-09-24T18:15:53+00:00",
+  "evals": {
+    "baseline": "trainjudge-runs/2026-09-24-sql_generation-5/eval/baseline.json",
+    "finetuned": "trainjudge-runs/2026-09-24-sql_generation-5/eval/finetuned.json",
+    "regression_baseline": "trainjudge-runs/2026-09-24-sql_generation-5/eval/regression_baseline.json",
+    "regression_finetuned": "trainjudge-runs/2026-09-24-sql_generation-5/eval/regression_finetuned.json"
+  }
+}

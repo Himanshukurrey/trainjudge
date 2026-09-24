@@ -1,0 +1,62 @@
+{
+  "verdict": "REGRESSED",
+  "reasons": [
+    "task accuracy improved +66.9 points",
+    "general instruction-following regressed -30.0 points",
+    "format compliance regressed -50.0 points"
+  ],
+  "task": {
+    "metric": "sql_execution_accuracy",
+    "baseline": 0.3076923076923077,
+    "finetuned": 0.9769230769230769,
+    "improvement_points": 66.92307692307692,
+    "baseline_lenient": 0.3230769230769231,
+    "finetuned_lenient": 0.9769230769230769,
+    "scored": 130,
+    "gained": 89,
+    "lost": 2,
+    "p_value": 3.3822316648042255e-24,
+    "significant": true
+  },
+  "regression": {
+    "instruction_following": {
+      "baseline": 0.7666666666666667,
+      "finetuned": 0.4666666666666667,
+      "delta_points": -30.000000000000004,
+      "total": 30,
+      "regressed": true
+    },
+    "format_compliance": {
+      "baseline": 1.0,
+      "finetuned": 0.5,
+      "delta_points": -50.0,
+      "total": 18,
+      "regressed": true
+    },
+    "hallucination": {
+      "baseline": 0.0,
+      "finetuned": 0.0,
+      "delta_points": 0.0,
+      "total": 12,
+      "regressed": false
+    }
+  },
+  "training": {
+    "train_loss_drop_pct": 99.8468606431853
+  },
+  "thresholds": {
+    "min_improvement_points": 3.0,
+    "regression_tolerance_points": 5.0,
+    "regression_min_items_lost": 2,
+    "significance": 0.05
+  },
+  "run": "trainjudge-runs/2026-09-24-sql_generation",
+  "model": "Qwen/Qwen3-0.6B",
+  "created_at": "2026-09-24T17:44:36+00:00",
+  "evals": {
+    "baseline": "trainjudge-runs/2026-09-24-sql_generation/eval/baseline.json",
+    "finetuned": "trainjudge-runs/2026-09-24-sql_generation/eval/finetuned.json",
+    "regression_baseline": "trainjudge-runs/2026-09-24-sql_generation/eval/regression_baseline.json",
+    "regression_finetuned": "trainjudge-runs/2026-09-24-sql_generation/eval/regression_finetuned.json"
+  }
+}

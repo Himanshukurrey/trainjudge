@@ -1,0 +1,60 @@
+{
+  "verdict": "IMPROVED",
+  "reasons": [
+    "task accuracy improved +67.7 points on held-out examples (p < 0.001), with no regressions"
+  ],
+  "task": {
+    "metric": "sql_execution_accuracy",
+    "baseline": 0.3076923076923077,
+    "finetuned": 0.9846153846153847,
+    "improvement_points": 67.6923076923077,
+    "baseline_lenient": 0.3230769230769231,
+    "finetuned_lenient": 0.9846153846153847,
+    "scored": 130,
+    "gained": 89,
+    "lost": 1,
+    "p_value": 1.4701842918422953e-25,
+    "significant": true
+  },
+  "regression": {
+    "instruction_following": {
+      "baseline": 0.7666666666666667,
+      "finetuned": 0.7666666666666667,
+      "delta_points": 0.0,
+      "total": 30,
+      "regressed": false
+    },
+    "format_compliance": {
+      "baseline": 1.0,
+      "finetuned": 0.9444444444444444,
+      "delta_points": -5.555555555555558,
+      "total": 18,
+      "regressed": false
+    },
+    "hallucination": {
+      "baseline": 0.0,
+      "finetuned": 0.16666666666666666,
+      "delta_points": 16.666666666666664,
+      "total": 12,
+      "regressed": false
+    }
+  },
+  "training": {
+    "train_loss_drop_pct": 92.35382308845577
+  },
+  "thresholds": {
+    "min_improvement_points": 3.0,
+    "regression_tolerance_points": 5.0,
+    "regression_min_items_lost": 2,
+    "significance": 0.05
+  },
+  "run": "trainjudge-runs/2026-09-24-sql_generation-3",
+  "model": "Qwen/Qwen3-0.6B",
+  "created_at": "2026-09-24T17:44:36+00:00",
+  "evals": {
+    "baseline": "trainjudge-runs/2026-09-24-sql_generation-3/eval/baseline.json",
+    "finetuned": "trainjudge-runs/2026-09-24-sql_generation-3/eval/finetuned.json",
+    "regression_baseline": "trainjudge-runs/2026-09-24-sql_generation-3/eval/regression_baseline.json",
+    "regression_finetuned": "trainjudge-runs/2026-09-24-sql_generation-3/eval/regression_finetuned.json"
+  }
+}
