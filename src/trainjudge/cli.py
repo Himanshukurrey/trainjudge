@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from trainjudge import __version__, dataset_audit
+from trainjudge import __version__, dataset_audit, diagnosis
 
 
 def _not_yet(feature: str) -> None:
@@ -24,9 +24,22 @@ def main() -> None:
 @click.option("--dataset", required=True, type=click.Path(exists=True, dir_okay=False))
 @click.option("--model", required=True, help="Base model name, e.g. Qwen/Qwen3-0.6B.")
 @click.option("--goal", required=True, help="What you want fine-tuning to achieve.")
-def diagnose(dataset: str, model: str, goal: str) -> None:
+@click.option(
+    "--tried-prompting/--not-tried-prompting",
+    default=None,
+    help="Whether few-shot prompting has already been tried (default: unknown).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Print the diagnosis as JSON.")
+def diagnose(
+    dataset: str, model: str, goal: str, tried_prompting: bool | None, as_json: bool
+) -> None:
     """Classify the goal: knowledge / format / cost / prompt gap."""
-    _not_yet("diagnose")
+    report = dataset_audit.audit_dataset(dataset)
+    result = diagnosis.diagnose(goal, report, model=model, tried_prompting=tried_prompting)
+    if as_json:
+        click.echo(json.dumps(result.to_dict(), indent=2))
+    else:
+        click.echo(diagnosis.format_diagnosis(result))
 
 
 @main.command()

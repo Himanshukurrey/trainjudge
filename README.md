@@ -20,6 +20,71 @@ trainjudge train --dataset <path> --model <name> --method lora
 trainjudge verify <run-dir>
 ```
 
+## Diagnosis: should you fine-tune at all?
+
+`trainjudge diagnose` runs before any training. It reads the goal and the dataset and
+sorts the request into one of four gaps:
+
+| Gap | What it means | Recommendation |
+|---|---|---|
+| Knowledge | The model lacks facts (policies, rates, product details) | ❌ Use retrieval, not fine-tuning |
+| Format/behavior | The model needs to learn an output format or convention (SQL, JSON, labels, tone) | ✓ Fine-tune |
+| Cost/latency | A big model already does the task; you want it cheaper or faster | ✓ Distill into a small model |
+| Prompt engineering | Few-shot prompting or clear instructions haven't been tried yet | ❌ Fix the prompt first |
+
+Signals come from the goal text and from the dataset itself: the output shape (SQL,
+JSON, code, labels or prose), whether answers state numbers that aren't in the question,
+how many prompts share the same answer, whether answers are grounded in context given in
+the prompt, whether rows cite a source document, and the dataset size. Every point a
+bucket earns is shown as evidence. When two buckets score close together, the output
+says the goal is mixed.
+
+```
+$ trainjudge diagnose --dataset demo/policy_docs/data.jsonl --model Qwen3-0.6B \
+    --goal "make it answer from our internal support policy documents"
+TRAINJUDGE DIAGNOSIS
+
+Goal: make it answer from our internal support policy documents
+Model: Qwen3-0.6B
+Dataset: 236 examples (question → prose answer pairs citing source documents)
+
+Classification: KNOWLEDGE GAP   (confidence: high)
+...
+Evidence:
+  • goal mentions "documents", "policy", "internal" +1 more
+  • completions are free-form prose answers
+  • 78% of answers state numbers, dates or amounts that aren't in the
+    question
+  • 216 prompts map to only 36 distinct answers, so the dataset teaches
+    recall of fixed facts
+  • only 23% of answer words appear in the prompt; the facts have to come
+    from the model's weights
+  • 100% of rows cite a source document
+
+Recommendation: ❌ Do not fine-tune for this goal.
+```
+
+Pass `--tried-prompting` or `--not-tried-prompting` if you know, and `--json` for
+machine-readable output. The JSON output includes every signal and score so a coding
+agent can review the call.
+
+## BFSI checks
+
+For banking, financial services and insurance datasets, diagnosis adds:
+
+- **Sensitive data:** card numbers (Luhn-checked), Aadhaar numbers (Verhoeff-checked),
+  PANs, account numbers, UPI IDs, Indian mobile numbers and email addresses. Fine-tuned
+  models can memorize and repeat training data, so mask or tokenize these first. The scan
+  runs on every dataset, BFSI or not, and reports line numbers only, never the values.
+- **Regulated facts:** goals about interest rates, charges, KYC rules or regulator
+  circulars lean towards retrieval over versioned documents with effective dates.
+- **Automated decisions:** goals like approving or rejecting loans or claims get a
+  warning to keep a human in the loop and check outcomes for bias.
+
+Two BFSI demos show both outcomes: [bfsi_transactions](demo/bfsi_transactions/)
+(transaction categorization: fine-tune, but mask the PII first) and
+[bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges: don't fine-tune, use retrieval).
+
 ## Dataset audit
 
 `trainjudge audit` reads JSONL in any of mlx-lm's formats (`prompt`/`completion`,
@@ -32,7 +97,8 @@ trainjudge verify <run-dir>
   prompt, and degenerate repetition
 - **clean:** everything else
 
-It also warns when the same prompt has conflicting completions.
+It also warns when the same prompt has conflicting completions, and when rows contain
+sensitive identifiers (see [BFSI checks](#bfsi-checks)).
 
 The audit only flags rows. `--write-clean <path>` saves a copy without duplicate and
 malformed rows; low-quality rows stay in the copy unless you add `--drop-low-quality`,
@@ -54,6 +120,9 @@ Format:  prompt/completion
 
 - The diagnosis step is a heuristic classifier, not a guarantee. It can misclassify
   mixed-goal tasks (partly knowledge, partly format).
+- The sensitive-data scan catches common Indian and payment identifiers in known
+  formats. It won't find names, addresses or identifiers in unusual formats, so it
+  doesn't replace a proper data-protection review.
 - The audit's low-quality checks are heuristics too. They can miss subtly wrong answers
   and can flag legitimate ones.
 

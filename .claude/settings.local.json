@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/opt/homebrew/Caskroom/miniconda/base/envs/proj_2/bin/python -m trainjudge.cli diagnose --dataset demo/policy_docs/data.jsonl --model Qwen3-0.6B --goal \"make it answer from our internal support policy documents\")"
+    ]
+  }
+}

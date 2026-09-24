@@ -11,8 +11,10 @@ import json
 import re
 import statistics
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from trainjudge import pii
 
 CLEAN = "clean"
 DUPLICATE = "duplicate"
@@ -57,6 +59,8 @@ class RowResult:
     status: str
     reason: str = ""
     raw: str = ""
+    example: Example | None = None
+    fields: tuple[str, ...] = ()
 
 
 @dataclass
@@ -67,6 +71,7 @@ class AuditReport:
     conflicting_prompts: int
     prompt_chars_median: float
     completion_chars_median: float
+    sensitive: dict[str, list[int]] = field(default_factory=dict)
 
     @property
     def total(self) -> int:
@@ -94,6 +99,7 @@ class AuditReport:
                 "prompt": self.prompt_chars_median,
                 "completion": self.completion_chars_median,
             },
+            "sensitive_data": self.sensitive,
             "issues": [
                 {"line": r.line, "status": r.status, "reason": r.reason}
                 for r in self.rows
@@ -127,8 +133,12 @@ def audit_dataset(path: str | Path) -> AuditReport:
     completions_by_prompt: dict[str, set[str]] = defaultdict(set)
     prompt_lens: list[int] = []
     completion_lens: list[int] = []
+    sensitive: dict[str, list[int]] = defaultdict(list)
 
     for lineno, raw, obj in parsed:
+        kinds = pii.scan_text(raw) if isinstance(obj, MalformedRow) else pii.scan_value(obj)
+        for kind in kinds:
+            sensitive[kind].append(lineno)
         try:
             if isinstance(obj, MalformedRow):
                 raise obj
@@ -137,18 +147,20 @@ def audit_dataset(path: str | Path) -> AuditReport:
             rows.append(RowResult(lineno, MALFORMED, str(e), raw))
             continue
 
-        key = (_normalize(example.prompt), _normalize(example.completion))
+        fields = tuple(obj)
+        key = (normalize(example.prompt), normalize(example.completion))
         if key in first_seen:
-            rows.append(RowResult(lineno, DUPLICATE, f"duplicate of line {first_seen[key]}", raw))
+            reason = f"duplicate of line {first_seen[key]}"
+            rows.append(RowResult(lineno, DUPLICATE, reason, raw, example, fields))
             continue
         first_seen[key] = lineno
 
         issue = _quality_issue(example)
         if issue:
-            rows.append(RowResult(lineno, LOW_QUALITY, issue, raw))
+            rows.append(RowResult(lineno, LOW_QUALITY, issue, raw, example, fields))
             continue
 
-        rows.append(RowResult(lineno, CLEAN, raw=raw))
+        rows.append(RowResult(lineno, CLEAN, "", raw, example, fields))
         prompt_lens.append(len(example.prompt))
         completion_lens.append(len(example.completion))
         if example.prompt:
@@ -161,6 +173,7 @@ def audit_dataset(path: str | Path) -> AuditReport:
         conflicting_prompts=sum(1 for c in completions_by_prompt.values() if len(c) > 1),
         prompt_chars_median=statistics.median(prompt_lens) if prompt_lens else 0,
         completion_chars_median=statistics.median(completion_lens) if completion_lens else 0,
+        sensitive={k: sensitive[k] for k in pii.KINDS if k in sensitive},
     )
 
 
@@ -203,6 +216,9 @@ def format_report(report: AuditReport, max_examples: int = 5) -> str:
             lines += ["", f"{LABELS[status].capitalize()} ({len(issues):,})"]
             lines += _grouped_by_reason(issues)
 
+    if report.sensitive:
+        lines += ["", *format_sensitive(report)]
+
     if report.conflicting_prompts:
         lines += [
             "",
@@ -211,6 +227,19 @@ def format_report(report: AuditReport, max_examples: int = 5) -> str:
             "(same prompt, different answer)"),
         ]
     return "\n".join(lines)
+
+
+def format_sensitive(report: AuditReport) -> list[str]:
+    rows = {line for lines in report.sensitive.values() for line in lines}
+    out = [f"Sensitive data ({len(rows):,} rows)"]
+    for kind, line_nos in report.sensitive.items():
+        sample = ", ".join(map(str, line_nos[:3])) + (", …" if len(line_nos) > 3 else "")
+        out.append(f"  ⚠ {kind}: {len(line_nos):,} rows  (line {sample})")
+    out.append(
+        "  Mask or remove these before training. Fine-tuned models can memorize and repeat "
+        "training data."
+    )
+    return out
 
 
 def _grouped_by_reason(issues: list[RowResult]) -> list[str]:
@@ -283,7 +312,7 @@ def _chat_example(messages: object) -> Example:
     return Example("\n".join(m["content"] for m in messages[:-1]), last["content"])
 
 
-def _normalize(text: str) -> str:
+def normalize(text: str) -> str:
     """Case/whitespace/trailing-punctuation-insensitive form used for duplicate checks."""
     return re.sub(r"\s+", " ", text).strip().casefold().rstrip(".?!;").strip()
 
@@ -295,8 +324,8 @@ def _quality_issue(example: Example) -> str | None:
         return "placeholder completion"
     if REFUSAL.match(completion):
         return "completion is a refusal"
-    norm = _normalize(completion)
-    if len(norm) >= MIN_ECHO_CHARS and _normalize(example.prompt).endswith(norm):
+    norm = normalize(completion)
+    if len(norm) >= MIN_ECHO_CHARS and normalize(example.prompt).endswith(norm):
         return "completion repeats the prompt"
     if _longest_token_run(completion) >= MAX_TOKEN_RUN:
         return "degenerate repetition (same token repeated)"
