@@ -17,6 +17,7 @@ pip install -e ".[dev,mlx]"   # mlx extra is Apple Silicon only
 trainjudge diagnose --dataset <path> --model <name> --goal "<text>"
 trainjudge audit <path>
 trainjudge train --dataset <path> --model <name> --method lora
+trainjudge eval <run-dir> --db <database>
 trainjudge verify <run-dir>
 ```
 
@@ -141,6 +142,28 @@ config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adap
 `--dry-run` prepares the folder without training. Defaults: rank 16, 16 layers,
 learning rate 5e-5, batch 4, 2 epochs, loss on completions only. Run
 `trainjudge train --help` for all options.
+
+## Evaluation: SQL execution accuracy
+
+`trainjudge eval` scores the base model and the fine-tuned adapter on the run's
+held-out test split. Neither model sees these rows during training.
+
+```bash
+trainjudge eval trainjudge-runs/2026-09-24-sql_generation --db demo/sql_generation/shop.sql
+```
+
+Each generated query runs read-only against the database, with a 5-second timeout,
+and counts as correct only if it returns the same rows as the gold query. Row order
+matters only when the gold query ends with `ORDER BY`. A **lenient** score, which
+allows extra columns, is reported alongside it. The gap between the two shows how
+much of a change comes from learned conventions (selecting exactly what was asked)
+rather than from getting the underlying query right.
+
+The base model is scored fairly: SQL is extracted from code fences and surrounding
+prose, both models use greedy decoding with the same prompt, and Qwen3's thinking
+mode is off for both. With thinking off, the prompt ends in the same empty think
+block the training data contains. Every example's prompt, raw output, extracted SQL
+and outcome is saved to `<run>/eval/baseline.json` and `<run>/eval/finetuned.json`.
 
 ## Known limitations
 

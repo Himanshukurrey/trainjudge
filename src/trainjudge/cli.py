@@ -7,7 +7,15 @@ from pathlib import Path
 
 import click
 
-from trainjudge import __version__, dataset_audit, diagnosis, mlx_backend, runs, training
+from trainjudge import (
+    __version__,
+    dataset_audit,
+    diagnosis,
+    evaluation,
+    mlx_backend,
+    runs,
+    training,
+)
 
 
 def _not_yet(feature: str) -> None:
@@ -165,6 +173,75 @@ def _duration(seconds: float) -> str:
         return f"{minutes}m {seconds:02d}s"
     hours, minutes = divmod(minutes, 60)
     return f"{hours}h {minutes:02d}m"
+
+
+@main.command("eval")
+@click.argument("run_dir", type=click.Path(exists=True, file_okay=False))
+@click.option("--db", "db_path", type=click.Path(exists=True, dir_okay=False),
+              help="SQLite database (.sqlite/.db) or SQL script (.sql) to run queries against. "
+                   "Defaults to the one recorded by a previous eval of this run.")
+@click.option("--target", type=click.Choice(["baseline", "finetuned", "both"]), default="both",
+              show_default=True)
+@click.option("--limit", type=int, help="Only evaluate the first N test examples.")
+@click.option("--max-tokens", type=int, default=512, show_default=True)
+@click.option("--batch-size", type=int, default=16, show_default=True)
+@click.option("--system-prompt", help="System prompt for both targets (default: none).")
+@click.option("--json", "as_json", is_flag=True, help="Print results as JSON.")
+def eval_command(run_dir: str, db_path: str | None, target: str, limit: int | None,
+                 max_tokens: int, batch_size: int, system_prompt: str | None,
+                 as_json: bool) -> None:
+    """Measure SQL execution accuracy of the base model and the fine-tuned adapter."""
+    run = Path(run_dir)
+    try:
+        record = runs.read_run_json(run)
+    except FileNotFoundError as e:
+        raise click.ClickException(f"{run} has no run.json; is it a trainjudge run?") from e
+    db_path = db_path or (record.get("task") or {}).get("database")
+    if not db_path:
+        raise click.UsageError("--db is required the first time a run is evaluated.")
+    if not as_json and (reason := mlx_backend.unavailable_reason()):
+        raise click.ClickException(reason)
+
+    decoding = mlx_backend.DecodingConfig(max_tokens=max_tokens, batch_size=batch_size,
+                                          system_prompt=system_prompt)
+    targets = evaluation.TARGETS if target == "both" else (target,)
+    labels = {"baseline": "Baseline (no fine-tuning)", "finetuned": "Fine-tuned"}
+    log = (lambda *a, **k: None) if as_json else click.echo
+    rows = len(evaluation.test_rows(run, limit))
+    log(f"SQL execution accuracy on {rows:,} held-out test examples")
+    log(f"  Database: {db_path}\n")
+
+    results = {}
+    for t in targets:
+        log(f"{labels[t]}: {record['model']}" + (" + LoRA adapter" if t == "finetuned" else ""))
+        try:
+            result = evaluation.evaluate_target(
+                run, t, Path(db_path), decoding, limit,
+                on_progress=lambda done, total: log(f"  generated {done:,}/{total:,}"),
+            )
+        except runs.RunError as e:
+            raise click.ClickException(str(e)) from e
+        results[t] = result
+        log(f"  {_accuracy_line(result)}\n")
+
+    if as_json:
+        click.echo(json.dumps({t: {k: v for k, v in r.items() if k != "examples"}
+                               for t, r in results.items()}, indent=2))
+        return
+    if len(results) == 2:
+        delta = (results["finetuned"]["accuracy"] - results["baseline"]["accuracy"]) * 100
+        click.echo(f"Change: {delta:+.1f} points. Run `trainjudge verify {run}` for the verdict.")
+    click.echo(f"Per-example results: {run / 'eval'}/")
+
+
+def _accuracy_line(result: dict) -> str:
+    outcomes = result["outcomes"]
+    correct = outcomes["correct"]
+    issues = [f"{n:,} {name.replace('_', ' ')}" for name, n in outcomes.items()
+              if n and name != "correct"]
+    line = (f"Accuracy {result['accuracy']:.1%} ({correct:,}/{result['scored']:,}) · "
+            f"lenient {result['lenient_accuracy']:.1%}")
+    return line + (f" · {' · '.join(issues)}" if issues else "")
 
 
 @main.command()

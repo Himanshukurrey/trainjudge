@@ -1,8 +1,9 @@
 """Local LoRA fine-tuning through mlx-lm (Apple Silicon).
 
-mlx-lm runs as a subprocess (`python -m mlx_lm lora`), which keeps TrainJudge
-independent of mlx-lm's Python API. Its progress lines are parsed into a loss
-curve as they stream.
+Training runs mlx-lm as a subprocess (`python -m mlx_lm lora`), which keeps
+TrainJudge independent of mlx-lm's training internals. Its progress lines are
+parsed into a loss curve as they stream. Generation for evals uses mlx-lm's
+Python API, imported only when needed.
 """
 
 from __future__ import annotations
@@ -188,3 +189,49 @@ def summarize(events: list[dict], duration_s: float) -> TrainingSummary:
         peak_mem_gb=max((e["peak_mem_gb"] for e in train_events), default=None),
         trained_tokens=train_events[-1]["trained_tokens"] if train_events else None,
     )
+
+
+@dataclass
+class DecodingConfig:
+    max_tokens: int = 512
+    batch_size: int = 16
+    enable_thinking: bool = False
+    system_prompt: str | None = None
+
+
+def generate_outputs(
+    model: str,
+    prompts: list[str],
+    adapter_path: Path | None = None,
+    decoding: DecodingConfig | None = None,
+    on_progress: Callable[[int, int], None] = lambda done, total: None,
+) -> list[str]:
+    """Greedy completions for each prompt, rendered with the model's chat template.
+
+    Thinking is disabled by default. For Qwen3 this renders the same empty
+    think block the training data contains, so the fine-tuned model sees
+    exactly the prompt format it was trained on.
+    """
+    import importlib
+
+    from mlx_lm import load
+
+    batch_generate = importlib.import_module("mlx_lm.generate").batch_generate
+    decoding = decoding or DecodingConfig()
+    llm, tokenizer = load(model, adapter_path=str(adapter_path) if adapter_path else None)
+
+    def render(prompt: str) -> list[int]:
+        messages = [{"role": "user", "content": prompt}]
+        if decoding.system_prompt:
+            messages.insert(0, {"role": "system", "content": decoding.system_prompt})
+        return tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, enable_thinking=decoding.enable_thinking
+        )
+
+    outputs: list[str] = []
+    for start in range(0, len(prompts), decoding.batch_size):
+        batch = [render(p) for p in prompts[start : start + decoding.batch_size]]
+        response = batch_generate(llm, tokenizer, batch, max_tokens=decoding.max_tokens)
+        outputs.extend(response.texts)
+        on_progress(len(outputs), len(prompts))
+    return outputs

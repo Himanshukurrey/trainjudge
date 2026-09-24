@@ -1,6 +1,7 @@
 """Generate the SQL-generation demo dataset (deterministic).
 
-Writes data.jsonl: text-to-SQL pairs over schema.sql, with a known number of
+Writes shop.sql, the seeded demo database (schema + rows) that the SQL eval
+executes queries against, and data.jsonl: text-to-SQL pairs over it, with a known number of
 duplicate, low-quality and malformed rows mixed in so `trainjudge audit` has
 something real to find. Every clean gold query is executed against a seeded
 SQLite database and must return rows.
@@ -255,6 +256,8 @@ def main() -> None:
     rng = random.Random(SEED)
     conn = sqlite3.connect(":memory:")
     entities = build_database(conn, rng)
+    db_out = HERE / "shop.sql"
+    db_out.write_text("\n".join(conn.iterdump()) + "\n")
 
     usable = []
     seen_questions = set()
