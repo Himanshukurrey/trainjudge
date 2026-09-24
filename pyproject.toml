@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trainjudge"
+version = "0.1.0.dev0"
+description = "Decide whether to fine-tune, then verify it actually worked — on task metrics, not training loss."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Himanshu K" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+# Local training backend (Apple Silicon only).
+mlx = [
+    "mlx-lm>=0.20; sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+trainjudge = "trainjudge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trainjudge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

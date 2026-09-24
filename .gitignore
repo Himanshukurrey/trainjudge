@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Training outputs / model weights
+trainjudge-runs/
+adapters/
+*.safetensors
+.DS_Store
