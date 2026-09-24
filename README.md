@@ -3,7 +3,7 @@
 Before you fine-tune, TrainJudge tells you whether fine-tuning is even the right move.
 After you fine-tune, it tells you whether it actually worked — on the task metric, not training loss.
 
-> Status: pre-alpha (v0.1 in progress). Some commands are not implemented yet.
+> Status: pre-alpha (v0.1 in progress). `verify` is not implemented yet.
 
 ## Install (dev)
 
@@ -115,6 +115,32 @@ Format:  prompt/completion
   71% clean · 18% duplicates · 7% low-quality · 4% malformed
 ...
 ```
+
+## Training (local, MLX)
+
+`trainjudge train` fine-tunes with LoRA through [mlx-lm](https://github.com/ml-explore/mlx-lm)
+on an Apple Silicon Mac. No GPU or cloud account is needed.
+
+```bash
+trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B
+```
+
+Before training, it:
+
+1. audits the dataset and drops duplicate and malformed rows. Low-quality rows are dropped
+   too unless you pass `--keep-low-quality`.
+2. refuses to train if the audit finds card numbers, Aadhaar, PAN or other sensitive
+   identifiers, unless you pass `--allow-sensitive-data`.
+3. splits the data into train, validation and **held-out test** sets (80/10/10 by
+   default). Rows are grouped by answer, so paraphrases of one answer never land in both
+   train and test. Only `trainjudge verify` reads the test split.
+
+Each run gets its own folder under `trainjudge-runs/`, holding the splits, the mlx-lm
+config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adapters and
+`run.json` (model, hyperparameters, dataset hash, audit counts and the training summary).
+`--dry-run` prepares the folder without training. Defaults: rank 16, 16 layers,
+learning rate 5e-5, batch 4, 2 epochs, loss on completions only. Run
+`trainjudge train --help` for all options.
 
 ## Known limitations
 

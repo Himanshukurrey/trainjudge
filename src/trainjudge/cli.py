@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from trainjudge import __version__, dataset_audit, diagnosis
+from trainjudge import __version__, dataset_audit, diagnosis, mlx_backend, runs, training
 
 
 def _not_yet(feature: str) -> None:
@@ -78,11 +78,93 @@ def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: b
 
 @main.command()
 @click.option("--dataset", required=True, type=click.Path(exists=True, dir_okay=False))
-@click.option("--model", required=True, help="Base model name, e.g. Qwen/Qwen3-0.6B.")
+@click.option("--model", required=True, help="Base model, e.g. Qwen3-0.6B or a Hugging Face repo.")
 @click.option("--method", type=click.Choice(["lora"]), default="lora", show_default=True)
-def train(dataset: str, model: str, method: str) -> None:
+@click.option("--epochs", type=float, default=2.0, show_default=True)
+@click.option("--iters", type=int, help="Training steps (overrides --epochs).")
+@click.option("--batch-size", type=int, default=4, show_default=True)
+@click.option("--learning-rate", type=float, default=5e-5, show_default=True)
+@click.option("--rank", type=int, default=16, show_default=True, help="LoRA rank.")
+@click.option("--num-layers", type=int, default=16, show_default=True,
+              help="Layers to adapt (-1 for all).")
+@click.option("--max-seq-length", type=int, default=2048, show_default=True)
+@click.option("--valid-fraction", type=float, default=0.1, show_default=True)
+@click.option("--test-fraction", type=float, default=0.1, show_default=True,
+              help="Held out for `trainjudge verify`.")
+@click.option("--seed", type=int, default=0, show_default=True)
+@click.option("--keep-low-quality", is_flag=True, help="Train on rows the audit flags as low-quality.")
+@click.option("--allow-sensitive-data", is_flag=True,
+              help="Train even if the audit finds card numbers, Aadhaar, PAN, etc.")
+@click.option("--goal", help="What the fine-tune is for (recorded in run.json).")
+@click.option("--runs-dir", type=click.Path(file_okay=False), default=str(runs.DEFAULT_RUNS_DIR),
+              show_default=True)
+@click.option("--dry-run", is_flag=True, help="Prepare the run directory but don't train.")
+def train(dataset: str, model: str, method: str, runs_dir: str, dry_run: bool, **options) -> None:
     """Fine-tune locally via MLX LoRA."""
-    _not_yet("train")
+    if not dry_run and (reason := mlx_backend.unavailable_reason()):
+        raise click.ClickException(f"{reason}. Use --dry-run to prepare the run anyway.")
+    try:
+        prepared = training.prepare_run(Path(dataset), model, Path(runs_dir), **options)
+    except runs.RunError as e:
+        raise click.ClickException(str(e)) from e
+
+    cfg = prepared.config
+    sizes = prepared.splits.sizes()
+    dropped = ", ".join(f"{n:,} {k.replace('_', '-')}" for k, n in prepared.dropped.items() if n)
+    click.echo(f"Prepared run {prepared.run_dir}/")
+    click.echo(f"  Dataset:  {prepared.audit.total:,} rows → {prepared.record['prep']['kept']:,} "
+               f"usable" + (f" (dropped {dropped})" if dropped else ""))
+    click.echo(f"  Split:    {sizes['train']:,} train · {sizes['valid']:,} valid · "
+               f"{sizes['test']:,} test (held out for verify)")
+    click.echo("")
+    click.echo("Training via MLX LoRA (local, Apple Silicon)...")
+    click.echo(f"  Base model:  {cfg.model}")
+    click.echo(f"  Method:      LoRA (rank {cfg.rank}, {cfg.num_layers} layers, "
+               f"lr {cfg.learning_rate:g})")
+    click.echo(f"  Examples:    {sizes['train']:,}")
+    click.echo(f"  Steps:       {cfg.iters:,} ({prepared.epochs:g} epochs, batch {cfg.batch_size})")
+
+    if dry_run:
+        click.echo("\nDry run: not training. To train, run:\n  " + " ".join(prepared.command))
+        return
+
+    def on_event(event: dict) -> None:
+        if event["type"] == "train":
+            remaining = (cfg.iters - event["iter"]) / event["it_per_sec"]
+            click.echo(f"  step {event['iter']:>5,}/{cfg.iters:,} · train loss "
+                       f"{event['loss']:.3f} · {event['it_per_sec']:.2f} it/s · "
+                       f"ETA {_duration(remaining)}")
+        else:
+            click.echo(f"  step {event['iter']:>5,}/{cfg.iters:,} · val loss {event['loss']:.3f}")
+
+    try:
+        summary = training.run_training(prepared, on_event)
+    except mlx_backend.TrainingFailed as e:
+        click.echo(e.log_tail, err=True)
+        raise click.ClickException(f"training failed: {e}. Full log: "
+                                   f"{prepared.run_dir / 'logs' / 'mlx.log'}") from e
+
+    click.echo("")
+    click.echo(f"Training finished in {_duration(summary.duration_s)}.")
+    if summary.train_loss_drop_pct is not None:
+        click.echo(f"  Train loss {summary.first_train_loss:.3f} → {summary.final_train_loss:.3f} "
+                   f"({-summary.train_loss_drop_pct:+.1f}%)")
+    if summary.first_val_loss is not None:
+        click.echo(f"  Val loss   {summary.first_val_loss:.3f} → {summary.final_val_loss:.3f}")
+    click.echo(f"  Adapters:  {prepared.run_dir / 'adapters'}")
+    click.echo("\nA lower loss doesn't prove the model got better at the task. Check with:")
+    click.echo(f"  trainjudge verify {prepared.run_dir}")
+
+
+def _duration(seconds: float) -> str:
+    seconds = round(seconds)
+    if seconds < 60:
+        return f"{seconds}s"
+    minutes, seconds = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{minutes}m {seconds:02d}s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h {minutes:02d}m"
 
 
 @main.command()
