@@ -66,7 +66,8 @@ Be respectful. Disagreements about code are fine; personal attacks aren't. See
 
 ## Releasing (maintainer only)
 
-1. Bump `version` in `pyproject.toml`, `src/trainjudge/__init__.py` and `.claude-plugin/plugin.json`.
+1. Bump `version` in `pyproject.toml`, `src/trainjudge/__init__.py`, `.claude-plugin/plugin.json` and the
+   version badge at the top of `README.md`.
 2. `git tag vX.Y.Z && git push origin vX.Y.Z`
 3. `gh release create vX.Y.Z --generate-notes`
 

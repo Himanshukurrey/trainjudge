@@ -1,10 +1,38 @@
-# TrainJudge
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/trainjudge-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/trainjudge-logo-light.svg">
+    <img src="docs/assets/trainjudge-logo-light.svg" alt="TrainJudge" width="400">
+  </picture>
+</h1>
+
+<h4 align="center">Decide whether fine-tuning is the right fix, then verify it actually worked,<br>on held-out task metrics and general skills, not training loss.</h4>
+
+<p align="center">
+  <a href="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml"><img src="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.1.0-green.svg" alt="Version 0.1.0"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+  <a href="#training-local-mlx"><img src="https://img.shields.io/badge/training-Apple%20Silicon%20%C2%B7%20MLX-black.svg" alt="Training on Apple Silicon with MLX"></a>
+  <a href="#using-it-from-claude-code"><img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757.svg" alt="Claude Code plugin"></a>
+</p>
+
+<p align="center">
+  <a href="#why">Why</a> •
+  <a href="#what-it-caught-on-the-demo">Results</a> •
+  <a href="#install">Install</a> •
+  <a href="#quickstart">Quickstart</a> •
+  <a href="#how-it-works">How it works</a> •
+  <a href="#bfsi-checks">BFSI checks</a> •
+  <a href="#limitations">Limitations</a>
+</p>
+
+<p align="center">
+  <img src="demo/trainjudge-diagnose-demo.gif" alt="TrainJudge diagnosis: &quot;don't fine-tune&quot; for policy documents, &quot;fine-tune&quot; for SQL" width="720">
+</p>
 
 Before you fine-tune, TrainJudge tells you whether fine-tuning is even the right move.
-After you fine-tune, it tells you whether it actually worked, measured on the task and on
-held-out general skills rather than on training loss.
-
-![TrainJudge diagnosis: "don't fine-tune" for policy documents, "fine-tune" for SQL](demo/trainjudge-diagnose-demo.gif)
+After you fine-tune, it tells you whether it actually worked.
 
 ## Why
 
