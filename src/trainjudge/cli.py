@@ -15,11 +15,9 @@ from trainjudge import (
     mlx_backend,
     runs,
     training,
+    verdict,
+    verification,
 )
-
-
-def _not_yet(feature: str) -> None:
-    raise click.ClickException(f"`{feature}` is not implemented yet.")
 
 
 @click.group()
@@ -199,7 +197,7 @@ def eval_command(run_dir: str, db_path: str | None, target: str, limit: int | No
     db_path = db_path or (record.get("task") or {}).get("database")
     if not db_path:
         raise click.UsageError("--db is required the first time a run is evaluated.")
-    if not as_json and (reason := mlx_backend.unavailable_reason()):
+    if reason := mlx_backend.unavailable_reason():
         raise click.ClickException(reason)
 
     decoding = mlx_backend.DecodingConfig(max_tokens=max_tokens, batch_size=batch_size,
@@ -246,9 +244,37 @@ def _accuracy_line(result: dict) -> str:
 
 @main.command()
 @click.argument("run_dir", type=click.Path(exists=True, file_okay=False))
-def verify(run_dir: str) -> None:
+@click.option("--db", "db_path", type=click.Path(exists=True, dir_okay=False),
+              help="Database for the SQL eval (defaults to the one recorded for this run).")
+@click.option("--min-improvement", type=float, default=verdict.DEFAULT_MIN_IMPROVEMENT,
+              show_default=True, help="Accuracy points needed to count as improved.")
+@click.option("--regression-tolerance", type=float,
+              default=verdict.DEFAULT_REGRESSION_TOLERANCE, show_default=True,
+              help="Pass-rate points a regression category may drop before it's flagged.")
+@click.option("--rerun", is_flag=True, help="Re-run all evals instead of reusing saved ones.")
+@click.option("--strict", is_flag=True, help="Exit with status 1 unless the verdict is IMPROVED.")
+def verify(run_dir: str, db_path: str | None, min_improvement: float,
+           regression_tolerance: float, rerun: bool, strict: bool) -> None:
     """Compare baseline vs fine-tuned on the task metric and issue a verdict."""
-    _not_yet("verify")
+    run = Path(run_dir)
+    if not (run / "run.json").exists():
+        raise click.ClickException(f"{run} has no run.json; is it a trainjudge run?")
+    try:
+        result = verification.verify_run(
+            run, Path(db_path) if db_path else None, min_improvement, regression_tolerance,
+            rerun, log=click.echo,
+        )
+    except runs.RunError as e:
+        raise click.ClickException(str(e)) from e
+    except ImportError as e:
+        raise click.ClickException(f"evals need mlx-lm: {e}") from e
+
+    click.echo("")
+    click.echo(verdict.format_box(result.verdict))
+    click.echo(f"\nArtifacts written to {run}/")
+    click.echo("  " + " · ".join(p.name for p in result.artifacts))
+    if strict and result.verdict.outcome != verdict.IMPROVED:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

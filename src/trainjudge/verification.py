@@ -1,0 +1,96 @@
+"""`trainjudge verify`: gather evals, decide the verdict, write the reports."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+from trainjudge import evaluation, mlx_backend, reports, runs, verdict
+
+
+@dataclass
+class VerifyResult:
+    verdict: verdict.Verdict
+    artifacts: list[Path]
+
+
+def _usable(result: dict | None) -> bool:
+    return result is not None and not result.get("test_split", {}).get("limited", False)
+
+
+def verify_run(
+    run_dir: Path,
+    db_path: Path | None = None,
+    min_improvement: float = verdict.DEFAULT_MIN_IMPROVEMENT,
+    regression_tolerance: float = verdict.DEFAULT_REGRESSION_TOLERANCE,
+    rerun: bool = False,
+    log: Callable[[str], None] = lambda msg: None,
+    generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+) -> VerifyResult:
+    run = runs.read_run_json(run_dir)
+    if run.get("status") != "trained":
+        raise runs.RunError(f"{run_dir} hasn't finished training (status: {run.get('status')})")
+    db_path = db_path or Path((run.get("task") or {}).get("database") or "")
+    if not db_path or not db_path.is_file():
+        raise runs.RunError("pass --db the first time a run is verified")
+
+    progress = lambda done, total: log(f"  generated {done:,}/{total:,}")
+    task, regression = {}, {}
+    for target in evaluation.TARGETS:
+        label = "baseline" if target == evaluation.BASELINE else "fine-tuned"
+        cached = None if rerun else evaluation.load_eval(run_dir, target)
+        if _usable(cached):
+            log(f"Using saved {label} task eval ({cached['accuracy']:.1%}).")
+            task[target] = cached
+        else:
+            log(f"Evaluating {label} model on the held-out test split...")
+            task[target] = evaluation.evaluate_target(run_dir, target, db_path,
+                                                      on_progress=progress, generate=generate)
+        cached = None if rerun else evaluation.load_eval(run_dir, target, regression=True)
+        if cached is not None:
+            log(f"Using saved {label} regression check.")
+            regression[target] = cached
+        else:
+            log(f"Running the regression check on the {label} model...")
+            regression[target] = evaluation.evaluate_regression(
+                run_dir, target, on_progress=progress, generate=generate
+            )
+
+    training = run.get("training") or {}
+    v = verdict.decide(
+        task[evaluation.BASELINE], task[evaluation.FINETUNED],
+        regression[evaluation.BASELINE], regression[evaluation.FINETUNED],
+        train_loss_drop_pct=training.get("train_loss_drop_pct"),
+        min_improvement=min_improvement,
+        regression_tolerance=regression_tolerance,
+    )
+
+    run = runs.read_run_json(run_dir)  # evals may have updated it
+    results = {
+        **v.to_dict(),
+        "run": str(run_dir),
+        "model": run["model"],
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "evals": {
+            t: str(evaluation.eval_path(run_dir, t)) for t in evaluation.TARGETS
+        } | {
+            f"regression_{t}": str(evaluation.eval_path(run_dir, t, regression=True))
+            for t in evaluation.TARGETS
+        },
+    }
+    artifacts = [run_dir / "MODEL_CARD.md", run_dir / "EXPERIMENT_REPORT.md",
+                 run_dir / "eval_results.json"]
+    artifacts[0].write_text(reports.model_card(run, v, str(run_dir)))
+    artifacts[1].write_text(reports.experiment_report(
+        run, v, task[evaluation.BASELINE], task[evaluation.FINETUNED],
+        regression[evaluation.BASELINE], regression[evaluation.FINETUNED], str(run_dir),
+    ))
+    artifacts[2].write_text(json.dumps(results, indent=2) + "\n")
+
+    run["verdict"] = {"outcome": v.outcome, "reasons": v.reasons,
+                      "created_at": results["created_at"]}
+    runs.write_run_json(run_dir, run)
+    return VerifyResult(v, artifacts)

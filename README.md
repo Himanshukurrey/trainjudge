@@ -3,7 +3,7 @@
 Before you fine-tune, TrainJudge tells you whether fine-tuning is even the right move.
 After you fine-tune, it tells you whether it actually worked — on the task metric, not training loss.
 
-> Status: pre-alpha (v0.1 in progress). `verify` is not implemented yet.
+> Status: pre-alpha (v0.1 in progress).
 
 ## Install (dev)
 
@@ -165,10 +165,38 @@ mode is off for both. With thinking off, the prompt ends in the same empty think
 block the training data contains. Every example's prompt, raw output, extracted SQL
 and outcome is saved to `<run>/eval/baseline.json` and `<run>/eval/finetuned.json`.
 
+## Verdict
+
+`trainjudge verify <run-dir>` compares the base model and the fine-tuned adapter, reusing
+saved evals where possible, and issues one of three verdicts:
+
+| Verdict | When |
+|---|---|
+| ✓ IMPROVED | Task accuracy rose by at least 3 points (`--min-improvement`), the gain is statistically significant (exact McNemar test on the same held-out examples, p < 0.05), and no regression category dropped more than 5 points (`--regression-tolerance`) |
+| ⚠ REGRESSED | The task improved, but general capability got worse. Don't deploy as-is. |
+| ✗ REJECTED | The task didn't improve meaningfully, whatever the training loss did |
+
+The **regression check** is a built-in, offline suite of 60 prompts with automatic
+pass/fail checks:
+
+- instruction-following: exact bullet counts, lowercase only, word limits, required
+  endings, bare-number arithmetic
+- format compliance: JSON objects with given keys, JSON string arrays, numbered lists
+- hallucination resistance: questions about prizes, towns and novels that don't exist;
+  the model passes by saying it doesn't know
+
+It writes `EXPERIMENT_REPORT.md` (the comparison, outcome breakdown, examples fixed and
+broken by fine-tuning, training details and reproduction commands), `MODEL_CARD.md`
+(Hugging Face–style, with the verdict) and `eval_results.json` to the run folder.
+`--strict` exits with status 1 unless the verdict is IMPROVED, which is useful in CI.
+
 ## Known limitations
 
 - The diagnosis step is a heuristic classifier, not a guarantee. It can misclassify
   mixed-goal tasks (partly knowledge, partly format).
+- The regression suite is small (60 prompts) and heuristic. It catches broken
+  formatting and instruction-following, not subtle capability loss, and its
+  hallucination check looks for explicit "I don't know" phrasing.
 - The sensitive-data scan catches common Indian and payment identifiers in known
   formats. It won't find names, addresses or identifiers in unusual formats, so it
   doesn't replace a proper data-protection review.

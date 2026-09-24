@@ -1,7 +1,8 @@
 """Evaluate a run's base model and fine-tuned adapter on its held-out test split.
 
-Results go to <run>/eval/<target>.json: every prompt, raw output, extracted
-SQL and outcome, so a verdict can always be traced back to examples.
+Results go to <run>/eval/<target>.json (task metric) and
+<run>/eval/regression_<target>.json (general-capability suite): every prompt,
+raw output and outcome, so a verdict can always be traced back to examples.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import eval_sql, mlx_backend, runs
+from trainjudge import eval_sql, mlx_backend, regression_check, runs
 
 BASELINE = "baseline"
 FINETUNED = "finetuned"
@@ -80,4 +81,49 @@ def evaluate_target(
         "path": str(eval_dir / f"{target}.json"),
     }
     runs.write_run_json(run_dir, record)
+    return result
+
+
+def eval_path(run_dir: Path, target: str, regression: bool = False) -> Path:
+    return run_dir / "eval" / (f"regression_{target}.json" if regression else f"{target}.json")
+
+
+def load_eval(run_dir: Path, target: str, regression: bool = False) -> dict | None:
+    path = eval_path(run_dir, target, regression)
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def evaluate_regression(
+    run_dir: Path,
+    target: str,
+    decoding: mlx_backend.DecodingConfig | None = None,
+    on_progress: Callable[[int, int], None] = lambda done, total: None,
+    generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+) -> dict:
+    """Run the general-capability suite for one target; write and return its record."""
+    if target not in TARGETS:
+        raise ValueError(f"unknown target {target!r}")
+    record = runs.read_run_json(run_dir)
+    adapter = run_dir / "adapters" if target == FINETUNED else None
+    if adapter is not None and not (adapter / "adapters.safetensors").exists():
+        raise runs.RunError(f"no trained adapter in {adapter}; run `trainjudge train` first")
+
+    items = regression_check.build_suite()
+    decoding = decoding or mlx_backend.DecodingConfig(max_tokens=256)
+    start = time.monotonic()
+    outputs = generate(record["model"], [i.prompt for i in items], adapter_path=adapter,
+                       decoding=decoding, on_progress=on_progress)
+    result = {
+        "target": target,
+        "model": record["model"],
+        "adapter_path": str(adapter) if adapter else None,
+        "suite": "trainjudge-regression-v1",
+        "decoding": asdict(decoding),
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "duration_s": round(time.monotonic() - start, 1),
+        **regression_check.to_dict(regression_check.score(items, outputs)),
+    }
+    path = eval_path(run_dir, target, regression=True)
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(json.dumps(result, indent=2) + "\n")
     return result
