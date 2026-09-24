@@ -298,3 +298,18 @@ def test_single_item_drop_is_not_a_regression():
     two = verdict.RegressionResult(FORMAT_COMPLIANCE, 18 / 18, 16 / 18, 18, 5.0)
     assert one.delta_points < -5 and one.items_lost == 1 and not one.regressed
     assert two.items_lost == 2 and two.regressed
+
+
+def test_verify_run_reports_each_stage(trained_run):
+    from trainjudge.status import StatusTracker, read_status
+
+    with StatusTracker(trained_run, "verify") as tracker:
+        verification.verify_run(trained_run, SHOP, generate=good_model(trained_run), tracker=tracker)
+    stages = [s["name"] for s in read_status(trained_run)["stages"]]
+    assert stages == [
+        "eval:baseline",
+        "regression:baseline",
+        "eval:finetuned",
+        "regression:finetuned",
+        "verdict",
+    ]

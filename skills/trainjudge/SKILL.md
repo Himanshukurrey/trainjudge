@@ -79,6 +79,29 @@ should run against. It's only needed the first time.
 
 Point the user to `EXPERIMENT_REPORT.md` and `MODEL_CARD.md` in the run folder.
 
+## Keep the user informed during long jobs
+
+`train` takes minutes to hours and `verify` several minutes. Don't go silent:
+
+- Run `train` and `verify` as background commands, not blocking calls.
+- Before starting, tell the user what's about to run and roughly how long it
+  will take. Both commands print a `Progress: trainjudge status <run>` line
+  near the start.
+- While it runs, check `trainjudge status <run-dir> --json` every minute or
+  two. It reports `state` (`running`, `done`, `failed`, `interrupted`, or
+  `stopped` if the process died without finishing), the current `stage_label`,
+  `step`/`total`, `eta_s` and the finished `stages`. Tell the user when each
+  stage finishes and what's next, with the ETA. For example: "Training done
+  (7m 41s). Now running the baseline eval, about 4 minutes left."
+- When `state` is `done`, report the result. If it's `failed` or `stopped`,
+  say so right away with the `message`, and check `<run>/logs/mlx.log` for
+  training failures.
+- `trainjudge status --all` lists every run, if the user asks what's running.
+
+Suggest `--notify` if the user wants a desktop notification when a job
+finishes, and `trainjudge status --watch` if they want to follow it in their
+own terminal.
+
 ## Limitations to keep in mind
 
 The diagnosis is a transparent heuristic, not a guarantee, and mixed goals

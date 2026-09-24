@@ -19,6 +19,7 @@ trainjudge audit <path>
 trainjudge train --dataset <path> --model <name> --method lora
 trainjudge eval <run-dir> --db <database>
 trainjudge verify <run-dir>
+trainjudge status [<run-dir>]
 ```
 
 ## Diagnosis: should you fine-tune at all?
@@ -189,6 +190,29 @@ It writes `EXPERIMENT_REPORT.md` (the comparison, outcome breakdown, examples fi
 broken by fine-tuning, training details and reproduction commands), `MODEL_CARD.md`
 (Hugging Face–style, with the verdict) and `eval_results.json` to the run folder.
 `--strict` exits with status 1 unless the verdict is IMPROVED, which is useful in CI.
+
+## Following long jobs
+
+`train`, `eval` and `verify` keep `<run>/status.json` up to date, so you (or a coding
+agent running the job in the background) can always see what's happening:
+
+```
+$ trainjudge status
+trainjudge-runs/2026-09-24-sql_generation-3
+  Command:  trainjudge verify  (▶ running)
+  Now:      Fine-tuned task eval · 64/130 (49%) · ETA 21s
+  Started:  6m 02s ago · last update 2s ago
+    ✓ Baseline task eval (3m 38s)
+    ✓ Baseline regression check (27s)
+```
+
+- `trainjudge status` shows the most recently updated run; pass a run folder to pick one.
+- `--all` lists every run with its state: running, done, failed, interrupted, or
+  stopped (the process died without reporting that it finished).
+- `--watch` follows a job until it finishes.
+- `--json` gives agents the same information.
+- Add `--notify` to `train`, `eval` or `verify` for a desktop notification (macOS) when
+  it finishes or fails.
 
 ## Known limitations
 

@@ -18,6 +18,9 @@ from trainjudge import (
     verdict,
     verification,
 )
+from trainjudge.status import StatusTracker
+
+NOTIFY_HELP = "Show a desktop notification (macOS) when the command finishes or fails."
 
 
 @click.group()
@@ -120,7 +123,10 @@ def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: b
     show_default=True,
 )
 @click.option("--dry-run", is_flag=True, help="Prepare the run directory but don't train.")
-def train(dataset: str, model: str, method: str, runs_dir: str, dry_run: bool, **options) -> None:
+@click.option("--notify", is_flag=True, help=NOTIFY_HELP)
+def train(
+    dataset: str, model: str, method: str, runs_dir: str, dry_run: bool, notify: bool, **options
+) -> None:
     """Fine-tune locally via MLX LoRA."""
     if not dry_run and (reason := mlx_backend.unavailable_reason()):
         raise click.ClickException(f"{reason}. Use --dry-run to prepare the run anyway.")
@@ -152,32 +158,46 @@ def train(dataset: str, model: str, method: str, runs_dir: str, dry_run: bool, *
     if dry_run:
         click.echo("\nDry run: not training. To train, run:\n  " + " ".join(prepared.command))
         return
+    click.echo(f"\nProgress: trainjudge status {prepared.run_dir}")
 
-    if replay_count:
-        click.echo(f"\nGenerating {replay_count:,} replay examples with the base model...")
-        added = training.add_replay(
-            prepared, on_progress=lambda done, total: click.echo(f"  {done:,}/{total:,}")
+    with StatusTracker(prepared.run_dir, "train", notify_on_finish=notify) as tracker:
+        if replay_count:
+            click.echo(f"\nGenerating {replay_count:,} replay examples with the base model...")
+            tracker.stage("replay", total=replay_count)
+
+            def on_replay(done: int, total: int) -> None:
+                click.echo(f"  {done:,}/{total:,}")
+                tracker.progress(done, total)
+
+            added = training.add_replay(prepared, on_progress=on_replay)
+            click.echo(f"  Added {added:,} replay examples to the training split.\n")
+
+        tracker.stage("train", total=cfg.iters)
+
+        def on_event(event: dict) -> None:
+            if event["type"] == "train":
+                remaining = (cfg.iters - event["iter"]) / event["it_per_sec"]
+                click.echo(
+                    f"  step {event['iter']:>5,}/{cfg.iters:,} · train loss "
+                    f"{event['loss']:.3f} · {event['it_per_sec']:.2f} it/s · "
+                    f"ETA {_duration(remaining)}"
+                )
+                tracker.progress(event["iter"], eta_s=remaining, message=f"train loss {event['loss']:.3f}")
+            else:
+                click.echo(f"  step {event['iter']:>5,}/{cfg.iters:,} · val loss {event['loss']:.3f}")
+                tracker.progress(event["iter"], message=f"val loss {event['loss']:.3f}")
+
+        try:
+            summary = training.run_training(prepared, on_event)
+        except mlx_backend.TrainingFailed as e:
+            click.echo(e.log_tail, err=True)
+            raise click.ClickException(
+                f"training failed: {e}. Full log: {prepared.run_dir / 'logs' / 'mlx.log'}"
+            ) from e
+        tracker.finish(
+            f"trained in {_duration(summary.duration_s)}; next: trainjudge verify {prepared.run_dir}",
+            result="trained",
         )
-        click.echo(f"  Added {added:,} replay examples to the training split.\n")
-
-    def on_event(event: dict) -> None:
-        if event["type"] == "train":
-            remaining = (cfg.iters - event["iter"]) / event["it_per_sec"]
-            click.echo(
-                f"  step {event['iter']:>5,}/{cfg.iters:,} · train loss "
-                f"{event['loss']:.3f} · {event['it_per_sec']:.2f} it/s · "
-                f"ETA {_duration(remaining)}"
-            )
-        else:
-            click.echo(f"  step {event['iter']:>5,}/{cfg.iters:,} · val loss {event['loss']:.3f}")
-
-    try:
-        summary = training.run_training(prepared, on_event)
-    except mlx_backend.TrainingFailed as e:
-        click.echo(e.log_tail, err=True)
-        raise click.ClickException(
-            f"training failed: {e}. Full log: {prepared.run_dir / 'logs' / 'mlx.log'}"
-        ) from e
 
     click.echo("")
     click.echo(f"Training finished in {_duration(summary.duration_s)}.")
@@ -224,6 +244,7 @@ def _duration(seconds: float) -> str:
 @click.option("--batch-size", type=int, default=16, show_default=True)
 @click.option("--system-prompt", help="System prompt for both targets (default: none).")
 @click.option("--json", "as_json", is_flag=True, help="Print results as JSON.")
+@click.option("--notify", is_flag=True, help=NOTIFY_HELP)
 def eval_command(
     run_dir: str,
     db_path: str | None,
@@ -233,6 +254,7 @@ def eval_command(
     batch_size: int,
     system_prompt: str | None,
     as_json: bool,
+    notify: bool,
 ) -> None:
     """Measure SQL execution accuracy of the base model and the fine-tuned adapter."""
     run = Path(run_dir)
@@ -257,21 +279,22 @@ def eval_command(
     log(f"  Database: {db_path}\n")
 
     results = {}
-    for t in targets:
-        log(f"{labels[t]}: {record['model']}" + (" + LoRA adapter" if t == "finetuned" else ""))
-        try:
-            result = evaluation.evaluate_target(
-                run,
-                t,
-                Path(db_path),
-                decoding,
-                limit,
-                on_progress=lambda done, total: log(f"  generated {done:,}/{total:,}"),
-            )
-        except runs.RunError as e:
-            raise click.ClickException(str(e)) from e
-        results[t] = result
-        log(f"  {_accuracy_line(result)}\n")
+    with StatusTracker(run, "eval", notify_on_finish=notify) as tracker:
+        for t in targets:
+            log(f"{labels[t]}: {record['model']}" + (" + LoRA adapter" if t == "finetuned" else ""))
+            tracker.stage(f"eval:{t}", total=rows)
+
+            def on_progress(done: int, total: int) -> None:
+                log(f"  generated {done:,}/{total:,}")
+                tracker.progress(done, total)
+
+            try:
+                result = evaluation.evaluate_target(run, t, Path(db_path), decoding, limit, on_progress)
+            except runs.RunError as e:
+                raise click.ClickException(str(e)) from e
+            results[t] = result
+            log(f"  {_accuracy_line(result)}\n")
+        tracker.finish(" · ".join(f"{t} {r['accuracy']:.1%}" for t, r in results.items()), result="evaluated")
 
     if as_json:
         click.echo(
@@ -322,6 +345,7 @@ def _accuracy_line(result: dict) -> str:
 )
 @click.option("--rerun", is_flag=True, help="Re-run all evals instead of reusing saved ones.")
 @click.option("--strict", is_flag=True, help="Exit with status 1 unless the verdict is IMPROVED.")
+@click.option("--notify", is_flag=True, help=NOTIFY_HELP)
 def verify(
     run_dir: str,
     db_path: str | None,
@@ -329,30 +353,103 @@ def verify(
     regression_tolerance: float,
     rerun: bool,
     strict: bool,
+    notify: bool,
 ) -> None:
     """Compare baseline vs fine-tuned on the task metric and issue a verdict."""
     run = Path(run_dir)
     if not (run / "run.json").exists():
         raise click.ClickException(f"{run} has no run.json; is it a trainjudge run?")
-    try:
-        result = verification.verify_run(
-            run,
-            Path(db_path) if db_path else None,
-            min_improvement,
-            regression_tolerance,
-            rerun,
-            log=click.echo,
-        )
-    except runs.RunError as e:
-        raise click.ClickException(str(e)) from e
-    except ImportError as e:
-        raise click.ClickException(f"evals need mlx-lm: {e}") from e
+    click.echo(f"Progress: trainjudge status {run}\n")
+    with StatusTracker(run, "verify", notify_on_finish=notify) as tracker:
+        try:
+            result = verification.verify_run(
+                run,
+                Path(db_path) if db_path else None,
+                min_improvement,
+                regression_tolerance,
+                rerun,
+                log=click.echo,
+                tracker=tracker,
+            )
+        except runs.RunError as e:
+            raise click.ClickException(str(e)) from e
+        except ImportError as e:
+            raise click.ClickException(f"evals need mlx-lm: {e}") from e
+        v = result.verdict
+        tracker.finish(f"{v.outcome}: {'; '.join(v.reasons)}", result=v.outcome)
 
     click.echo("")
     click.echo(verdict.format_box(result.verdict))
     click.echo(f"\nArtifacts written to {run}/")
     click.echo("  " + " · ".join(p.name for p in result.artifacts))
     if strict and result.verdict.outcome != verdict.IMPROVED:
+        raise SystemExit(1)
+
+
+@main.command("status")
+@click.argument("run_dir", required=False, type=click.Path(file_okay=False))
+@click.option(
+    "--runs-dir",
+    type=click.Path(file_okay=False),
+    default=str(runs.DEFAULT_RUNS_DIR),
+    show_default=True,
+)
+@click.option("--all", "show_all", is_flag=True, help="List every run instead of the latest one.")
+@click.option("--watch", is_flag=True, help="Keep printing progress until the job finishes.")
+@click.option(
+    "--interval", type=float, default=5.0, show_default=True, help="Seconds between --watch updates."
+)
+@click.option("--json", "as_json", is_flag=True, help="Print the status as JSON (for agents).")
+def status_command(
+    run_dir: str | None, runs_dir: str, show_all: bool, watch: bool, interval: float, as_json: bool
+) -> None:
+    """Show what a train/eval/verify job is doing: stage, progress, ETA, finished or not."""
+    import time
+
+    from trainjudge import status as st
+
+    if show_all:
+        found = st.find_runs(Path(runs_dir))
+        if as_json:
+            click.echo(json.dumps([{**s, "state": st.effective_state(s)} for _, s in found], indent=2))
+        elif not found:
+            click.echo(f"No runs with status in {runs_dir}/.")
+        else:
+            for path, s in found:
+                click.echo(st.one_line(path, s))
+        return
+
+    if run_dir:
+        path = Path(run_dir)
+    else:
+        found = st.find_runs(Path(runs_dir))
+        if not found:
+            raise click.ClickException(f"No runs with status in {runs_dir}/.")
+        path = found[0][0]
+
+    status = st.read_status(path)
+    if status is None:
+        raise click.ClickException(
+            f"{path} has no {st.STATUS_FILE} (no train/eval/verify has run there yet)."
+        )
+    if as_json:
+        click.echo(json.dumps({**status, "state": st.effective_state(status)}, indent=2))
+        return
+    click.echo(st.format_status(path, status))
+    if not watch:
+        return
+
+    last = None
+    while st.effective_state(status) == st.RUNNING:
+        line = st.progress_text(status)
+        if line != last:
+            click.echo(f"  … {line}")
+            last = line
+        time.sleep(interval)
+        status = st.read_status(path) or status
+    click.echo("")
+    click.echo(st.format_status(path, status))
+    if st.effective_state(status) != st.DONE:
         raise SystemExit(1)
 
 

@@ -26,6 +26,13 @@ Training and evals need an Apple Silicon Mac; `diagnose` and `audit` run anywher
    deploy. REJECTED means it didn't really improve, whatever the loss did.
    Never claim improvement from training loss alone.
 
+**Long jobs: keep the user informed.** `train` and `verify` take minutes.
+Run them in the background, and every minute or two check
+`trainjudge status <run-dir> --json` (`state`, `stage_label`, `step`/`total`,
+`eta_s`, finished `stages`). Tell the user when each stage finishes, what's
+next and the ETA. Report `failed` or `stopped` right away. Never go quiet
+until the result is in.
+
 Full details: [skills/trainjudge/SKILL.md](skills/trainjudge/SKILL.md).
 
 ## Working on this repository

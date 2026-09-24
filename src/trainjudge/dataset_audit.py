@@ -181,8 +181,10 @@ def write_clean_dataset(report: AuditReport, out_path: str | Path, drop_low_qual
     """Write rows that aren't duplicates or malformed; return how many were kept."""
     drop = {DUPLICATE, MALFORMED} | ({LOW_QUALITY} if drop_low_quality else set())
     kept = [r for r in report.rows if r.status not in drop]
-    with Path(out_path).open("w", encoding="utf-8") as f:
-        f.writelines(r.raw if r.raw.endswith("\n") else r.raw + "\n" for r in kept)
+    # newline="" and explicit "\n": rows keep their content but always end in LF,
+    # whatever the input used (CRLF input would otherwise become \r\r\n on Windows).
+    with Path(out_path).open("w", encoding="utf-8", newline="") as f:
+        f.writelines(r.raw.rstrip("\r\n") + "\n" for r in kept)
     return len(kept)
 
 

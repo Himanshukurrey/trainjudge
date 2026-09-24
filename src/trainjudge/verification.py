@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from trainjudge import evaluation, mlx_backend, reports, runs, verdict
+from trainjudge.status import StatusTracker
 
 
 @dataclass
@@ -29,6 +30,7 @@ def verify_run(
     rerun: bool = False,
     log: Callable[[str], None] = lambda msg: None,
     generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    tracker: StatusTracker | None = None,
 ) -> VerifyResult:
     run = runs.read_run_json(run_dir)
     if run.get("status") != "trained":
@@ -39,6 +41,13 @@ def verify_run(
 
     def progress(done: int, total: int) -> None:
         log(f"  generated {done:,}/{total:,}")
+        if tracker:
+            tracker.progress(done, total)
+
+    def stage(name: str, message: str) -> None:
+        log(message)
+        if tracker:
+            tracker.stage(name)
 
     task, regression = {}, {}
     for target in evaluation.TARGETS:
@@ -48,7 +57,7 @@ def verify_run(
             log(f"Using saved {label} task eval ({cached['accuracy']:.1%}).")
             task[target] = cached
         else:
-            log(f"Evaluating {label} model on the held-out test split...")
+            stage(f"eval:{target}", f"Evaluating {label} model on the held-out test split...")
             task[target] = evaluation.evaluate_target(
                 run_dir, target, db_path, on_progress=progress, generate=generate
             )
@@ -57,11 +66,13 @@ def verify_run(
             log(f"Using saved {label} regression check.")
             regression[target] = cached
         else:
-            log(f"Running the regression check on the {label} model...")
+            stage(f"regression:{target}", f"Running the regression check on the {label} model...")
             regression[target] = evaluation.evaluate_regression(
                 run_dir, target, on_progress=progress, generate=generate
             )
 
+    if tracker:
+        tracker.stage("verdict")
     training = run.get("training") or {}
     v = verdict.decide(
         task[evaluation.BASELINE],

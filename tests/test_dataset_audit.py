@@ -204,3 +204,17 @@ def test_cli_drop_low_quality_needs_write_clean(tmp_path):
     path = write_jsonl(tmp_path / "d.jsonl", [pc("a", "SELECT 1;")])
     result = CliRunner().invoke(main, ["audit", str(path), "--drop-low-quality"])
     assert result.exit_code != 0
+
+
+def test_write_clean_normalizes_crlf(tmp_path):
+    # Files written on Windows use CRLF; the cleaned copy must not gain blank lines.
+    path = tmp_path / "d.jsonl"
+    lines = [
+        json.dumps(pc("a", "SELECT 1;")),
+        json.dumps(pc("a", "SELECT 1;")),
+        json.dumps(pc("b", "SELECT 2;")),
+    ]
+    path.write_bytes(("\r\n".join(lines) + "\r\n").encode())
+    out = tmp_path / "clean.jsonl"
+    assert write_clean_dataset(audit_dataset(path), out) == 2
+    assert out.read_bytes() == (lines[0] + "\n" + lines[2] + "\n").encode()
