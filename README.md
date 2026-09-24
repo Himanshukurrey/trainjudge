@@ -3,7 +3,7 @@
 Before you fine-tune, TrainJudge tells you whether fine-tuning is even the right move.
 After you fine-tune, it tells you whether it actually worked — on the task metric, not training loss.
 
-> Status: pre-alpha (v0.1 in progress). Commands are stubs until their planned day lands.
+> Status: pre-alpha (v0.1 in progress). Some commands are not implemented yet.
 
 ## Install (dev)
 
