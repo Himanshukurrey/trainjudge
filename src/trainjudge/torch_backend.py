@@ -130,22 +130,44 @@ def generate_outputs(
         )
 
     outputs: list[str] = []
-    for start in range(0, len(prompts), decoding.batch_size):
-        batch = [render(p) for p in prompts[start : start + decoding.batch_size]]
-        width = max(len(ids) for ids in batch)
-        # Left-pad so every prompt ends right where generation starts.
-        input_ids = torch.tensor([[pad_id] * (width - len(ids)) + ids for ids in batch], device=device)
-        attention = torch.tensor([[0] * (width - len(ids)) + [1] * len(ids) for ids in batch], device=device)
-        with torch.no_grad():
-            generated = llm.generate(
-                input_ids=input_ids,
-                attention_mask=attention,
-                max_new_tokens=decoding.max_tokens,
-                do_sample=False,
-                pad_token_id=pad_id,
-                eos_token_id=eos,
+    try:
+        for start in range(0, len(prompts), decoding.batch_size):
+            batch = [render(p) for p in prompts[start : start + decoding.batch_size]]
+            width = max(len(ids) for ids in batch)
+            # Left-pad so every prompt ends right where generation starts.
+            input_ids = torch.tensor([[pad_id] * (width - len(ids)) + ids for ids in batch], device=device)
+            attention = torch.tensor(
+                [[0] * (width - len(ids)) + [1] * len(ids) for ids in batch], device=device
             )
-        for row in generated[:, width:]:
-            outputs.append(tokenizer.decode(row, skip_special_tokens=True))
-        on_progress(len(outputs), len(prompts))
+            with torch.no_grad():
+                generated = llm.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention,
+                    max_new_tokens=decoding.max_tokens,
+                    do_sample=False,
+                    pad_token_id=pad_id,
+                    eos_token_id=eos,
+                )
+            for row in generated[:, width:]:
+                outputs.append(tokenizer.decode(row, skip_special_tokens=True))
+            on_progress(len(outputs), len(prompts))
+    finally:
+        # Hand the GPU memory back: PyTorch's caching allocator otherwise keeps it reserved
+        # in this process, and the next step (the training subprocess, or the next eval pass)
+        # would then run out of memory loading its own copy of the model.
+        del llm
+        release_memory(device)
     return outputs
+
+
+def release_memory(device: str) -> None:
+    """Free cached accelerator memory held by this process."""
+    import gc
+
+    import torch
+
+    gc.collect()
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif device == "mps" and hasattr(torch, "mps"):
+        torch.mps.empty_cache()

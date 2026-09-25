@@ -59,3 +59,16 @@ def test_prompt_masking_matches_generation_prompt():
     )
     assert ids[:prompt_len] == list(prompt_ids)  # the loss starts exactly at the answer
     assert "Hello!" in tokenizer.decode(ids[prompt_len:])
+
+
+def test_generation_releases_accelerator_memory(monkeypatch):
+    """Each generation pass must hand its memory back, or the next model load runs out (seen on a T4)."""
+    released = []
+    real = torch_backend.release_memory
+    monkeypatch.setattr(
+        torch_backend, "release_memory", lambda device: (released.append(device), real(device))
+    )
+    torch_backend.generate_outputs(
+        MODEL, ["Hi"], device="cpu", decoding=torch_backend.DecodingConfig(max_tokens=4, batch_size=1)
+    )
+    assert released == ["cpu"]
