@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml"><img src="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.1.0-green.svg" alt="Version 0.1.0"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.2.0-green.svg" alt="Version 0.2.0"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Apache 2.0 license"></a>
   <a href="#training"><img src="https://img.shields.io/badge/training-MLX%20%C2%B7%20CUDA%20%C2%B7%20CPU-black.svg" alt="Training with MLX, CUDA or CPU"></a>
@@ -86,6 +86,30 @@ and [rejected](demo/sql_generation/example-runs/rejected/EXPERIMENT_REPORT.md).
 The demo data is synthetic and template-generated, which is why accuracy climbs so high
 so fast. The point is the verdicts, not the numbers.
 
+### On an NVIDIA GPU too
+
+The same pipeline, on the PyTorch backend, on a free Colab T4, with the
+[healthcare clinical-coding demo](demo/domains/healthcare/clinical_coding/): 3 medical record
+numbers and 3 dates of birth masked, then LoRA on `Qwen3-0.6B` with `--replay 208` for 150
+steps, which trained in **1.5 minutes**.
+
+| | Base model | Fine-tuned |
+|---|---|---|
+| JSON exact match (60 held-out notes) | 0.0% | **100.0%** (p < 0.001) |
+| Field accuracy: `diagnosis` · `icd10` · `severity` | 25% · 0% · 65% | 100% · 100% · 100% |
+| Instruction-following · format compliance | 77% · 100% | 77% · 100% |
+| Verdict | | **✓ IMPROVED** |
+
+The base model invented ICD-10 codes ("I91.1" for bronchitis), folded the severity into the
+diagnosis ("MODERATE ASTHMA") and abbreviated it ("M"). Its instruction-following score on
+CUDA matched its score on MLX exactly (77%), so the two backends render prompts the same way.
+Run it yourself with [the Colab notebook](notebooks/trainjudge_colab.ipynb).
+
+The codes are also a reminder that goals are often mixed: the adapter learned which code goes
+with each of the demo's 12 conditions, but the real ICD-10 catalog has about 70,000 codes and
+changes every year. That part is better served by a lookup or retrieval, with fine-tuning
+handling the output format.
+
 ## Install
 
 Pick the extra for your machine:
@@ -93,7 +117,7 @@ Pick the extra for your machine:
 | Machine | Install | Training runs on |
 |---|---|---|
 | Apple Silicon Mac | `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"` | MLX (fastest on a Mac) |
-| Windows or Linux with an NVIDIA GPU | install [PyTorch with CUDA](https://pytorch.org/get-started/locally/), then `pip install "trainjudge[cuda] @ git+https://github.com/Himanshukurrey/trainjudge"` | PyTorch on CUDA |
+| Windows or Linux with an NVIDIA GPU | install [PyTorch with CUDA](https://pytorch.org/get-started/locally/), then `pip install "trainjudge[cuda] @ git+https://github.com/Himanshukurrey/trainjudge"` | PyTorch on CUDA (verified on an NVIDIA T4) |
 | No GPU | [the Colab notebook](notebooks/trainjudge_colab.ipynb) runs everything on a free NVIDIA T4, or install `[cuda]` for a (slow) CPU run | PyTorch |
 
 `diagnose`, `audit` and `status` run anywhere with no extras. For development:
