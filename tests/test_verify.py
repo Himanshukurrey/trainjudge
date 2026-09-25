@@ -350,3 +350,40 @@ def test_baseline_is_reused_across_runs(tmp_path):
 
     verification.verify_run(second, SHOP, generate=counting(second), rerun=True)
     assert calls.count("baseline") == 4  # --rerun bypasses the cache
+
+
+def test_reproduce_command_includes_every_option_that_shaped_the_run(tmp_path):
+    import shlex
+
+    from trainjudge.cli import main as cli_main
+    from trainjudge.reports import reproduce_command
+
+    dataset = DEMO.parent / "domains" / "healthcare" / "clinical_coding" / "data.jsonl"
+    prepared = training.prepare_run(
+        dataset, "Qwen3-0.6B", tmp_path / "a", iters=150, rank=8, num_layers=8, learning_rate=2e-5,
+        replay_count=208, mask_sensitive=True, backend="torch", goal="extract codes, as JSON",
+    )  # fmt: skip
+    command = reproduce_command(prepared.record)
+    for flag in ("--backend torch", "--replay 208", "--mask-sensitive", "--iters 150", "--rank 8"):
+        assert flag in command
+    assert "--goal 'extract codes, as JSON'" in command
+
+    # It must parse as a real train invocation and prepare the same run.
+    argv = shlex.split(command.replace("\\\n", " "))[1:]
+    argv += ["--runs-dir", str(tmp_path / "b"), "--dry-run"]
+    result = CliRunner().invoke(cli_main, argv)
+    assert result.exit_code == 0, result.output
+    again = json.loads(next((tmp_path / "b").iterdir()).joinpath("run.json").read_text(encoding="utf-8"))
+    assert again["config"] == prepared.record["config"]
+    assert (again["model"], again["goal"]) == (prepared.record["model"], prepared.record["goal"])
+    for key in ("splits", "replay", "mask_sensitive", "masked", "keep_low_quality"):
+        assert again["prep"][key] == prepared.record["prep"][key]
+
+
+def test_torch_backend_label_shows_the_device_actually_used():
+    from trainjudge.reports import _backend_label
+
+    backend = {"name": "torch", "device": "auto", "torch_version": "2.11", "peft_version": "0.20"}
+    assert _backend_label(backend).endswith("on auto")
+    backend.update(device_used="cuda", device_name="Tesla T4", dtype="float32")
+    assert _backend_label(backend) == "PyTorch (torch 2.11, peft 0.20) on Tesla T4 (cuda, float32)"

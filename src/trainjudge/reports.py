@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 
 from trainjudge import tasks
 from trainjudge.regression_check import CATEGORY_LABELS
@@ -38,11 +39,52 @@ def _question(prompt: str) -> str:
 def _backend_label(backend: dict) -> str:
     if backend.get("name", "mlx") == "mlx":
         return f"mlx-lm {backend.get('mlx_lm_version') or '?'} (Apple Silicon)"
-    device = backend.get("device", "auto")
     libs = ", ".join(
         f"{k.removesuffix('_version')} {v}" for k, v in backend.items() if k.endswith("_version") and v
     )
-    return f"PyTorch ({libs}) on {device}"
+    if backend.get("device_name"):
+        where = f"{backend['device_name']} ({backend.get('device_used', '?')}, {backend.get('dtype', '?')})"
+    else:
+        where = backend.get("device", "auto")
+    return f"PyTorch ({libs}) on {where}"
+
+
+def reproduce_command(run: dict) -> str:
+    """The `trainjudge train` command that recreates this run's data prep and training."""
+    cfg, prep, backend = run["config"], run["prep"], run.get("backend") or {}
+    parts = [
+        "trainjudge train",
+        f"--dataset {shlex.quote(run['dataset']['path'])}",
+        f"--model {shlex.quote(run['model'])}",
+        f"--backend {backend.get('name', 'mlx')}",
+    ]
+    if backend.get("name") == "torch" and backend.get("device", "auto") != "auto":
+        parts.append(f"--device {backend['device']}")
+    parts += [
+        f"--iters {cfg['iters']}",
+        f"--batch-size {cfg['batch_size']}",
+        f"--learning-rate {cfg['learning_rate']:g}",
+        f"--rank {cfg['rank']}",
+        f"--num-layers {cfg['num_layers']}",
+        f"--seed {cfg['seed']}",
+    ]
+    if cfg.get("max_seq_length", 2048) != 2048:
+        parts.append(f"--max-seq-length {cfg['max_seq_length']}")
+    for key, flag in (("valid_fraction", "--valid-fraction"), ("test_fraction", "--test-fraction")):
+        if prep.get(key, 0.1) != 0.1:
+            parts.append(f"{flag} {prep[key]:g}")
+    if (prep.get("replay") or {}).get("requested"):
+        parts.append(f"--replay {prep['replay']['requested']}")
+    # Older runs predate the explicit flag; masked counts imply masking was on.
+    if prep.get("mask_sensitive", bool(prep.get("masked"))):
+        parts.append("--mask-sensitive")
+    if prep.get("allow_sensitive_data"):
+        parts.append("--allow-sensitive-data")
+    if prep.get("keep_low_quality", "low_quality" not in prep.get("dropped", {"low_quality": 0})):
+        parts.append("--keep-low-quality")
+    if run.get("goal"):
+        parts.append(f"--goal {shlex.quote(run['goal'])}")
+    return " \\\n    ".join(parts)
 
 
 def _task_of(evaluation: dict) -> tasks.TaskInfo:
@@ -235,12 +277,7 @@ def experiment_report(
         "## Reproduce",
         "",
         "```bash",
-        (
-            f"trainjudge train --dataset {dataset['path']} --model {run['model']} "
-            f"--iters {cfg['iters']} --batch-size {cfg['batch_size']} "
-            f"--learning-rate {cfg['learning_rate']:g} --rank {cfg['rank']} "
-            f"--num-layers {cfg['num_layers']} --seed {cfg['seed']}"
-        ),
+        reproduce_command(run),
         (
             f"trainjudge verify <run-dir> --db {baseline_eval['database']['path']}"
             if baseline_eval.get("database")

@@ -130,7 +130,14 @@ def main() -> None:
     device = pick_device(cfg["device"], torch)
     dtype = pick_dtype(device, torch)
     name = torch.cuda.get_device_name(0) if device == "cuda" else device
-    log(f"Loading pretrained model {cfg['model']} on {name} ({str(dtype).replace('torch.', '')})")
+    dtype_name = str(dtype).replace("torch.", "")
+    log(f"Loading pretrained model {cfg['model']} on {name} ({dtype_name})")
+    # Record what "auto" actually resolved to, for run.json and the reports.
+    logs = Path(cfg["data"]).parent / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    (logs / "device.json").write_text(
+        json.dumps({"device_used": device, "device_name": name, "dtype": dtype_name}) + "\n", encoding="utf-8"
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(cfg["model"])
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id

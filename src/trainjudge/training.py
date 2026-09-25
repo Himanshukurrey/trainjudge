@@ -140,6 +140,9 @@ def prepare_run(
             "seed": seed,
             "replay": {"requested": replay_count, "added": 0},
             "masked": dict(masked),
+            "mask_sensitive": mask_sensitive,
+            "allow_sensitive_data": allow_sensitive_data,
+            "keep_low_quality": keep_low_quality,
         },
         "config": {**asdict(config), "epochs": epochs},
         "command": command,
@@ -190,5 +193,8 @@ def run_training(prepared: PreparedRun, on_event=lambda e: None) -> TrainingSumm
         raise
     record["status"] = "trained"
     record["training"] = summary.to_dict()
+    device_file = prepared.run_dir / "logs" / "device.json"
+    if device_file.exists():
+        record["backend"].update(json.loads(device_file.read_text(encoding="utf-8")))
     runs.write_run_json(prepared.run_dir, record)
     return summary
