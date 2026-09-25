@@ -9,7 +9,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import __version__, mlx_backend, pii, replay, runs
+from trainjudge import __version__, backends, pii, replay, runs, torch_backend
+from trainjudge.backend_base import DecodingConfig, LoraConfig, TrainingFailed, TrainingSummary
 from trainjudge.dataset_audit import LOW_QUALITY, AuditReport, audit_dataset
 
 
@@ -22,7 +23,7 @@ class PreparedRun:
     run_dir: Path
     audit: AuditReport
     splits: runs.Splits
-    config: mlx_backend.LoraConfig
+    config: LoraConfig
     command: list[str]
     dropped: dict[str, int]
     epochs: float
@@ -49,6 +50,8 @@ def prepare_run(
     mask_sensitive: bool = False,
     goal: str | None = None,
     replay_count: int = 0,
+    backend: str = "auto",
+    device: str = "auto",
 ) -> PreparedRun:
     audit = audit_dataset(dataset)
     if audit.sensitive and not (allow_sensitive_data or mask_sensitive):
@@ -86,7 +89,8 @@ def prepare_run(
         iters = max(1, math.ceil(epochs * train_size / batch_size))
     else:
         epochs = round(iters * batch_size / train_size, 2)
-    config = mlx_backend.LoraConfig(
+    backend_name = backends.resolve(backend)
+    config = LoraConfig(
         model=runs.resolve_model(model),
         iters=iters,
         batch_size=batch_size,
@@ -101,8 +105,15 @@ def prepare_run(
     run_dir = runs.new_run_dir(Path(runs_dir), Path(dataset))
     run_dir.mkdir(parents=True)
     runs.write_splits(run_dir, splits)
-    config_path = mlx_backend.write_config(config, run_dir)
-    command = mlx_backend.build_command(config, config_path)
+    module = backends.get(backend_name)
+    if backend_name == backends.TORCH:
+        config_path = torch_backend.write_config(config, run_dir, device)
+    else:
+        config_path = module.write_config(config, run_dir)
+    command = module.build_command(config, config_path)
+    backend_record = {"name": backend_name, **module.versions()}
+    if backend_name == backends.TORCH:
+        backend_record["device"] = device
 
     record = {
         "trainjudge_version": __version__,
@@ -111,7 +122,7 @@ def prepare_run(
         "goal": goal,
         "model": config.model,
         "method": "lora",
-        "backend": {"name": "mlx", "mlx_lm_version": mlx_backend.mlx_lm_version()},
+        "backend": backend_record,
         "dataset": {
             "path": str(dataset),
             "sha256": runs.file_sha256(Path(dataset)),
@@ -140,7 +151,7 @@ def prepare_run(
 
 def add_replay(
     prepared: PreparedRun,
-    generate=mlx_backend.generate_outputs,
+    generate=None,
     on_progress=lambda done, total: None,
 ) -> int:
     """Append base-model answers to general prompts to the training split."""
@@ -148,10 +159,11 @@ def add_replay(
     if not count:
         return 0
     prompts = replay.replay_prompts(count)
+    generate = generate or backends.generator(prepared.record)
     outputs = generate(
         prepared.config.model,
         prompts,
-        decoding=mlx_backend.DecodingConfig(max_tokens=256),
+        decoding=DecodingConfig(max_tokens=256),
         on_progress=on_progress,
     )
     rows = [{"prompt": p, "completion": o.strip()} for p, o in zip(prompts, outputs) if o.strip()]
@@ -166,11 +178,12 @@ def add_replay(
     return len(rows)
 
 
-def run_training(prepared: PreparedRun, on_event=lambda e: None) -> mlx_backend.TrainingSummary:
+def run_training(prepared: PreparedRun, on_event=lambda e: None) -> TrainingSummary:
     record = prepared.record
+    module = backends.get(backends.backend_of(record))
     try:
-        summary = mlx_backend.train(prepared.command, prepared.run_dir, on_event)
-    except mlx_backend.TrainingFailed as e:
+        summary = module.train(prepared.command, prepared.run_dir, on_event)
+    except TrainingFailed as e:
         record["status"] = "failed"
         record["error"] = str(e)
         runs.write_run_json(prepared.run_dir, record)

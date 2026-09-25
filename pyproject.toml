@@ -34,6 +34,13 @@ dependencies = [
 mlx = [
     "mlx-lm>=0.31; sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+# PyTorch training and eval backend: NVIDIA GPUs (Windows/Linux), Apple MPS or CPU.
+# For CUDA, install the matching torch wheel first (https://pytorch.org/get-started/).
+cuda = [
+    "torch>=2.2",
+    "transformers>=4.45",
+    "peft>=0.13",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.6",

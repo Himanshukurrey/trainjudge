@@ -15,7 +15,8 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import eval_json, eval_sql, mlx_backend, regression_check, runs, tasks
+from trainjudge import backends, eval_json, eval_sql, regression_check, runs, tasks
+from trainjudge.backend_base import DecodingConfig
 
 CACHE_DIR = ".baseline-cache"
 
@@ -84,10 +85,10 @@ def evaluate_target(
     run_dir: Path,
     target: str,
     db_path: Path | None = None,
-    decoding: mlx_backend.DecodingConfig | None = None,
+    decoding: DecodingConfig | None = None,
     limit: int | None = None,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
-    generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    generate: Callable[..., list[str]] | None = None,
     task: str | None = None,
     use_cache: bool = True,
 ) -> dict:
@@ -100,12 +101,13 @@ def evaluate_target(
         raise ValueError(f"unknown target {target!r}")
     record = runs.read_run_json(run_dir)
     adapter = run_dir / "adapters" if target == FINETUNED else None
-    if adapter is not None and not (adapter / "adapters.safetensors").exists():
+    if adapter is not None and not backends.adapter_ready(adapter):
         raise runs.RunError(f"no trained adapter in {adapter}; run `trainjudge train` first")
+    generate = generate or backends.generator(record)
 
     task, db_path = resolve_task(run_dir, task, db_path)
     rows = test_rows(run_dir, limit)
-    decoding = decoding or mlx_backend.DecodingConfig()
+    decoding = decoding or DecodingConfig()
 
     cache = None
     if target == BASELINE:
@@ -189,9 +191,9 @@ def load_eval(run_dir: Path, target: str, regression: bool = False) -> dict | No
 def evaluate_regression(
     run_dir: Path,
     target: str,
-    decoding: mlx_backend.DecodingConfig | None = None,
+    decoding: DecodingConfig | None = None,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
-    generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    generate: Callable[..., list[str]] | None = None,
     use_cache: bool = True,
 ) -> dict:
     """Run the general-capability suite for one target; write and return its record."""
@@ -199,11 +201,12 @@ def evaluate_regression(
         raise ValueError(f"unknown target {target!r}")
     record = runs.read_run_json(run_dir)
     adapter = run_dir / "adapters" if target == FINETUNED else None
-    if adapter is not None and not (adapter / "adapters.safetensors").exists():
+    if adapter is not None and not backends.adapter_ready(adapter):
         raise runs.RunError(f"no trained adapter in {adapter}; run `trainjudge train` first")
+    generate = generate or backends.generator(record)
 
     items = regression_check.build_suite()
-    decoding = decoding or mlx_backend.DecodingConfig(max_tokens=256)
+    decoding = decoding or DecodingConfig(max_tokens=256)
     path = eval_path(run_dir, target, regression=True)
     cache = None
     if target == BASELINE:

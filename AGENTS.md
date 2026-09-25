@@ -6,8 +6,10 @@ Instructions for coding agents (Codex and others that read `AGENTS.md`).
 
 When the user asks to fine-tune, LoRA-train or distill a model, or asks whether
 a fine-tuned model is better than its base model, use the `trainjudge` CLI.
-Install it with `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`.
-Training and evals need an Apple Silicon Mac; `diagnose` and `audit` run anywhere.
+Install it with `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`
+on an Apple Silicon Mac, or `[cuda]` on Windows/Linux with an NVIDIA GPU (install PyTorch with
+CUDA first). `diagnose` and `audit` run anywhere; with no GPU, use
+`notebooks/trainjudge_colab.ipynb` on Colab.
 
 1. **Diagnose before training.**
    `trainjudge diagnose --dataset <path> --model <model> --goal "<goal>"`.
@@ -39,9 +41,10 @@ Full details: [skills/trainjudge/SKILL.md](skills/trainjudge/SKILL.md).
 
 ## Working on this repository
 
-- Setup: `pip install -e ".[dev]"` (add `mlx` on an Apple Silicon Mac for real training).
+- Setup: `pip install -e ".[dev]"` (add `mlx` on an Apple Silicon Mac, or `cuda` for the PyTorch backend).
 - Before finishing a change, run `pytest`, `ruff check .` and `ruff format --check .`.
-- Tests must not download models or need `mlx-lm`. Use the fake backends in
+- Tests must not download models or need `mlx-lm` or `torch`, except
+  `tests/test_torch_integration.py` (opt-in, its own CI job). Use the fake backends in
   `tests/test_training.py` and `tests/test_verify.py`.
 - `demo/*/data.jsonl`, `demo/*/docs/` and `demo/sql_generation/shop.sql` are
   generated. Edit the matching `generate.py`, rerun it and commit both.

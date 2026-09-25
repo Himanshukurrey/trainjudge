@@ -25,7 +25,7 @@ def completions(path):
 
 
 def test_prepare_run_splits_sql_demo_without_leakage(tmp_path):
-    prepared = training.prepare_run(SQL, "Qwen3-0.6B", tmp_path)
+    prepared = training.prepare_run(SQL, "Qwen3-0.6B", tmp_path, backend="mlx")
     run_dir = prepared.run_dir
     assert run_dir.name == f"{datetime.now().astimezone().date().isoformat()}-sql_generation"
     assert prepared.config.model == "Qwen/Qwen3-0.6B"

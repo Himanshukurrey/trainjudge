@@ -9,17 +9,18 @@ import click
 
 from trainjudge import (
     __version__,
+    backends,
     dataset_audit,
     diagnosis,
     domains,
     evaluation,
-    mlx_backend,
     runs,
     tasks,
     training,
     verdict,
     verification,
 )
+from trainjudge.backend_base import DecodingConfig, TrainingFailed
 from trainjudge.status import StatusTracker
 
 NOTIFY_HELP = "Show a desktop notification (macOS) when the command finishes or fails."
@@ -149,16 +150,46 @@ def audit(
     default=str(runs.DEFAULT_RUNS_DIR),
     show_default=True,
 )
+@click.option(
+    "--backend",
+    type=click.Choice(list(backends.CHOICES)),
+    default="auto",
+    show_default=True,
+    help="mlx (Apple Silicon) or torch (NVIDIA CUDA, Apple MPS or CPU). auto picks MLX when it's usable.",
+)
+@click.option(
+    "--device",
+    type=click.Choice(["auto", "cuda", "mps", "cpu"]),
+    default="auto",
+    show_default=True,
+    help="torch backend only: where to train and run evals.",
+)
 @click.option("--dry-run", is_flag=True, help="Prepare the run directory but don't train.")
 @click.option("--notify", is_flag=True, help=NOTIFY_HELP)
 def train(
-    dataset: str, model: str, method: str, runs_dir: str, dry_run: bool, notify: bool, **options
+    dataset: str,
+    model: str,
+    method: str,
+    runs_dir: str,
+    backend: str,
+    device: str,
+    dry_run: bool,
+    notify: bool,
+    **options,
 ) -> None:
-    """Fine-tune locally via MLX LoRA."""
-    if not dry_run and (reason := mlx_backend.unavailable_reason()):
+    """Fine-tune with LoRA: MLX on Apple Silicon, or PyTorch on NVIDIA GPUs, MPS or CPU."""
+    backend_name = backends.resolve(backend)
+    if not dry_run and (reason := backends.unavailable_reason(backend_name)):
         raise click.ClickException(f"{reason}. Use --dry-run to prepare the run anyway.")
+    if backend_name == backends.TORCH and device == "cuda" and not dry_run:
+        import torch
+
+        if not torch.cuda.is_available():
+            raise click.ClickException("--device cuda was requested, but PyTorch can't see an NVIDIA GPU.")
     try:
-        prepared = training.prepare_run(Path(dataset), model, Path(runs_dir), **options)
+        prepared = training.prepare_run(
+            Path(dataset), model, Path(runs_dir), backend=backend_name, device=device, **options
+        )
     except runs.RunError as e:
         raise click.ClickException(str(e)) from e
 
@@ -177,7 +208,10 @@ def train(
     if masked := prepared.record["prep"].get("masked"):
         click.echo("  Masked:   " + ", ".join(f"{n:,} {k}" for k, n in masked.items()))
     click.echo("")
-    click.echo("Training via MLX LoRA (local, Apple Silicon)...")
+    if backend_name == backends.MLX:
+        click.echo("Training via MLX LoRA (local, Apple Silicon)...")
+    else:
+        click.echo(f"Training via PyTorch LoRA (transformers + peft, device: {device})...")
     click.echo(f"  Base model:  {cfg.model}")
     click.echo(f"  Method:      LoRA (rank {cfg.rank}, {cfg.num_layers} layers, lr {cfg.learning_rate:g})")
     replay_count = prepared.record["prep"]["replay"]["requested"]
@@ -218,11 +252,9 @@ def train(
 
         try:
             summary = training.run_training(prepared, on_event)
-        except mlx_backend.TrainingFailed as e:
+        except TrainingFailed as e:
             click.echo(e.log_tail, err=True)
-            raise click.ClickException(
-                f"training failed: {e}. Full log: {prepared.run_dir / 'logs' / 'mlx.log'}"
-            ) from e
+            raise click.ClickException(f"training failed: {e}. Full log: {e.log_path}") from e
         tracker.finish(
             f"trained in {_duration(summary.duration_s)}; next: trainjudge verify {prepared.run_dir}",
             result="trained",
@@ -303,12 +335,10 @@ def eval_command(
         task, db = evaluation.resolve_task(run, task, Path(db_path) if db_path else None)
     except runs.RunError as e:
         raise click.UsageError(str(e)) from e
-    if reason := mlx_backend.unavailable_reason():
+    if reason := backends.unavailable_reason(backends.backend_of(record)):
         raise click.ClickException(reason)
 
-    decoding = mlx_backend.DecodingConfig(
-        max_tokens=max_tokens, batch_size=batch_size, system_prompt=system_prompt
-    )
+    decoding = DecodingConfig(max_tokens=max_tokens, batch_size=batch_size, system_prompt=system_prompt)
     targets = evaluation.TARGETS if target == "both" else (target,)
     labels = {"baseline": "Baseline (no fine-tuning)", "finetuned": "Fine-tuned"}
     log = (lambda *a, **k: None) if as_json else click.echo

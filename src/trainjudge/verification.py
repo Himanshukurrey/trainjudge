@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import evaluation, mlx_backend, reports, runs, verdict
+from trainjudge import evaluation, reports, runs, verdict
 from trainjudge.status import StatusTracker
 
 
@@ -29,7 +29,7 @@ def verify_run(
     regression_tolerance: float = verdict.DEFAULT_REGRESSION_TOLERANCE,
     rerun: bool = False,
     log: Callable[[str], None] = lambda msg: None,
-    generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    generate: Callable[..., list[str]] | None = None,
     tracker: StatusTracker | None = None,
     task: str | None = None,
 ) -> VerifyResult:

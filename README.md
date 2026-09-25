@@ -13,7 +13,8 @@
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.1.0-green.svg" alt="Version 0.1.0"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Apache 2.0 license"></a>
-  <a href="#training-local-mlx"><img src="https://img.shields.io/badge/training-Apple%20Silicon%20%C2%B7%20MLX-black.svg" alt="Training on Apple Silicon with MLX"></a>
+  <a href="#training"><img src="https://img.shields.io/badge/training-MLX%20%C2%B7%20CUDA%20%C2%B7%20CPU-black.svg" alt="Training with MLX, CUDA or CPU"></a>
+  <a href="notebooks/trainjudge_colab.ipynb"><img src="https://img.shields.io/badge/try%20it-Colab%20notebook-F9AB00.svg" alt="Colab notebook"></a>
   <a href="#using-it-from-claude-code"><img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757.svg" alt="Claude Code plugin"></a>
 </p>
 
@@ -87,17 +88,19 @@ so fast. The point is the verdicts, not the numbers.
 
 ## Install
 
-```bash
-pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"
-```
+Pick the extra for your machine:
 
-`diagnose`, `audit` and `status` run anywhere. `train`, `eval` and `verify` need an Apple
-Silicon Mac (the `mlx` extra installs [mlx-lm](https://github.com/ml-explore/mlx-lm)); no
-GPU or cloud account is needed. For development:
+| Machine | Install | Training runs on |
+|---|---|---|
+| Apple Silicon Mac | `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"` | MLX (fastest on a Mac) |
+| Windows or Linux with an NVIDIA GPU | install [PyTorch with CUDA](https://pytorch.org/get-started/locally/), then `pip install "trainjudge[cuda] @ git+https://github.com/Himanshukurrey/trainjudge"` | PyTorch on CUDA |
+| No GPU | [the Colab notebook](notebooks/trainjudge_colab.ipynb) runs everything on a free NVIDIA T4, or install `[cuda]` for a (slow) CPU run | PyTorch |
+
+`diagnose`, `audit` and `status` run anywhere with no extras. For development:
 
 ```bash
 git clone https://github.com/Himanshukurrey/trainjudge && cd trainjudge
-pip install -e ".[dev,mlx]"
+pip install -e ".[dev,mlx]"    # or .[dev,cuda]
 pytest
 ```
 
@@ -129,7 +132,7 @@ commands can use it.
 trainjudge diagnose --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B \
   --goal "improve SQL generation for our shop database"
 
-# 2. Train (cleans the data, holds out a test split, LoRA via mlx-lm)
+# 2. Train (cleans the data, holds out a test split, LoRA on MLX or PyTorch)
 trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B \
   --iters 150 --learning-rate 2e-5 --rank 8 --num-layers 8 --replay 208
 
@@ -284,10 +287,22 @@ Format:  prompt/completion
 ...
 ```
 
-### Training (local, MLX)
+### Training
 
-`trainjudge train` fine-tunes with LoRA through [mlx-lm](https://github.com/ml-explore/mlx-lm)
-on an Apple Silicon Mac. No GPU or cloud account is needed.
+`trainjudge train` fine-tunes with LoRA, locally, on one of two backends:
+
+| `--backend` | Uses | Runs on |
+|---|---|---|
+| `mlx` | [mlx-lm](https://github.com/ml-explore/mlx-lm) | Apple Silicon Macs |
+| `torch` | [transformers](https://github.com/huggingface/transformers) + [peft](https://github.com/huggingface/peft) | NVIDIA GPUs via CUDA (Windows, Linux), Apple GPUs via MPS, or CPU (`--device auto` picks) |
+
+`--backend auto` (the default) uses MLX when it's installed and PyTorch otherwise. Both
+render prompts the same way, train with the loss on completions only, and print the same
+progress, so `status`, `eval` and `verify` work identically. The backend is recorded in
+`run.json`, and evals of a run always use the backend that trained it, because the two
+write different adapter formats. On NVIDIA GPUs with bf16 support (Ampere or newer)
+training uses bf16; elsewhere (including Colab's T4) fp32. Qwen3-0.6B fits comfortably in
+a 6 GB GPU.
 
 ```bash
 trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B
@@ -307,8 +322,8 @@ Before training, it:
    a category), the split is per row, so every label appears in training. `run.json`
    records which was used. Only `trainjudge verify` reads the test split.
 
-Each run gets its own folder under `trainjudge-runs/`, holding the splits, the mlx-lm
-config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adapters and
+Each run gets its own folder under `trainjudge-runs/`, holding the splits, the backend's
+config, the raw log (`logs/mlx.log` or `logs/torch.log`), the parsed loss curve (`logs/training_log.jsonl`), the adapters and
 `run.json` (model, hyperparameters, dataset hash, audit counts and the training summary).
 `--dry-run` prepares the folder without training. Defaults: rank 16, 16 layers,
 learning rate 5e-5, batch 4, 2 epochs, loss on completions only. Run
@@ -438,7 +453,7 @@ trainjudge-runs/2026-09-24-sql_generation-3
   retrieval side by side
 - `gemini-extension.json` and Cursor rules
 - Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
-- A Windows/CUDA training path
+- 4-bit (QLoRA) loading on CUDA for larger models on small GPUs
 
 ## Contributing
 

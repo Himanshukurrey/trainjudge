@@ -22,13 +22,14 @@ Thanks for considering a contribution. Here's the workflow.
 
 ## Tests don't need a GPU
 
-The test suite never downloads a model or needs `mlx-lm`. Training and generation go through fake backends
+The test suite never downloads a model or needs `mlx-lm` or `torch`. Training and generation go through fake backends
 (see `fake_backend` in `tests/test_training.py` and `good_model` in `tests/test_verify.py`), so every test runs
 on any OS in a few seconds. If you change something that only shows up with a real model, such as prompt
-rendering, generation or `mlx-lm` flags, also run it on an Apple Silicon Mac and say so in the PR:
+rendering, generation or backend flags, also run it on real hardware (an Apple Silicon Mac for MLX, or an
+NVIDIA GPU, Colab included, for PyTorch) and say so in the PR:
 
 ```bash
-pip install -e ".[dev,mlx]"
+pip install -e ".[dev,mlx]"    # or .[dev,cuda] with --backend torch
 trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B --iters 20
 trainjudge verify trainjudge-runs/<run> --db demo/sql_generation/shop.sql
 ```
@@ -57,6 +58,14 @@ Keep sensitive-data detectors in `src/trainjudge/pii.py` rather than in a pack, 
 dataset is scanned whatever its domain. Compliance pointers should name the rule, not
 interpret it.
 
+The PyTorch backend also has a real integration test that trains a tiny model on CPU (it downloads
+about 270 MB the first time):
+
+```bash
+pip install -e ".[dev,cuda]"
+TRAINJUDGE_TORCH_INTEGRATION=1 pytest tests/test_torch_integration.py
+```
+
 ## Demo datasets
 
 The files in `demo/*/` are generated, not hand-written. To change one, edit its `generate.py`, run it, and
@@ -79,7 +88,7 @@ second pair of eyes on every change.
 
 ## Reporting bugs
 
-Open an issue describing what you expected vs. what happened, your OS, Python and `mlx-lm` versions, and the
+Open an issue describing what you expected vs. what happened, your OS, Python and backend (`mlx-lm` or `torch`) versions, and the
 exact command you ran. For problems with a run, attaching its `run.json` (and `eval_results.json`, if it got
 that far) is the fastest way to get it looked at. Check them for anything private first.
 

@@ -13,9 +13,11 @@ be fine-tuned at all: facts belong in retrieval, and unclear instructions
 belong in the prompt. TrainJudge checks both ends.
 
 Check `trainjudge` is installed before using this skill: `trainjudge --version`.
-If it isn't, tell the user (`pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`)
-and proceed without it rather than blocking on it. Training and evals need an
-Apple Silicon Mac; `diagnose` and `audit` run anywhere.
+If it isn't, tell the user how to install it: `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`
+on an Apple Silicon Mac, or `[cuda]` instead of `[mlx]` on Windows/Linux with an NVIDIA GPU (after installing PyTorch with CUDA), and proceed
+without it rather than blocking on it. Training and evals run on MLX (Apple Silicon)
+or PyTorch (CUDA, MPS or CPU; `--backend auto` picks); `diagnose` and `audit` run
+anywhere. Users with no GPU can use `notebooks/trainjudge_colab.ipynb` on Colab.
 
 ## Workflow
 
@@ -105,7 +107,8 @@ so never rely on it. Don't go silent:
    For example: "Training done (1m 50s). Now running the baseline eval, about a minute
    left."
 5. On `✓ finished`, report the result. On `✗ failed` or `✗ stopped`, say so right away
-   with the message, and check `<run>/logs/mlx.log` for training failures.
+   with the message, and check `<run>/logs/mlx.log` or `<run>/logs/torch.log` for
+   training failures.
 
 `trainjudge status <run-dir> --json` gives a one-off snapshot (`state`, `stage_label`,
 `step`/`total`, `eta_s`, finished `stages`), and `trainjudge status --all` lists every

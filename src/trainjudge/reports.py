@@ -35,6 +35,16 @@ def _question(prompt: str) -> str:
     return prompt.strip()
 
 
+def _backend_label(backend: dict) -> str:
+    if backend.get("name", "mlx") == "mlx":
+        return f"mlx-lm {backend.get('mlx_lm_version') or '?'} (Apple Silicon)"
+    device = backend.get("device", "auto")
+    libs = ", ".join(
+        f"{k.removesuffix('_version')} {v}" for k, v in backend.items() if k.endswith("_version") and v
+    )
+    return f"PyTorch ({libs}) on {device}"
+
+
 def _task_of(evaluation: dict) -> tasks.TaskInfo:
     return tasks.TASKS[evaluation.get("task", tasks.SQL)]
 
@@ -194,7 +204,7 @@ def experiment_report(
             f"| Steps | {cfg['iters']} ({cfg['epochs']:g} epochs, batch {cfg['batch_size']}, "
             f"lr {cfg['learning_rate']:g}) |"
         ),
-        f"| Backend | mlx-lm {run['backend'].get('mlx_lm_version') or '?'} |",
+        f"| Backend | {_backend_label(run.get('backend') or {})} |",
         f"| Duration | {training.get('duration_s', 0) / 60:.1f} min |",
         f"| Train loss | {training.get('first_train_loss')} → {training.get('final_train_loss')}"
         + (f" ({-drop:+.1f}%)" if drop is not None else "")
