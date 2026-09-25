@@ -72,7 +72,7 @@ def _is_json_object(text: str) -> bool:
 
 def detect(rows: list[dict]) -> str:
     """Pick the task type from the gold completions of a test split."""
-    completions = [r.get("completion") for r in rows if isinstance(r.get("completion"), str)]
+    completions = [c for r in rows if isinstance(c := r.get("completion"), str)]
     if not completions:
         raise UnknownTask("the test split has no prompt/completion rows to score")
     json_share = sum(_is_json_object(c) for c in completions) / len(completions)

@@ -268,13 +268,13 @@ class Diagnosis:
             "profile": {**self.profile.__dict__, "grounded": self.profile.grounded},
             "domain": (
                 {
-                    "name": self.domain.name,
-                    "label": self.domain.label,
+                    "name": self.domain_match.pack.name,
+                    "label": self.domain_match.pack.label,
                     "terms": self.domain_match.terms,
                     "changing_fact_terms": self.changing_fact_terms,
                     "high_stakes_terms": self.high_stakes_terms,
                 }
-                if self.domain
+                if self.domain_match
                 else None
             ),
             "audit": {
@@ -301,10 +301,10 @@ def diagnose(
         scores[bucket] += points
         evidence[bucket].append(reason)
 
-    knowledge_hits = _find_terms(goal, KNOWLEDGE_TERMS)
-    format_hits = _find_terms(goal, FORMAT_TERMS)
-    cost_hits = _find_terms(goal, COST_TERMS)
-    prompt_hits = _find_terms(goal, PROMPT_TERMS)
+    knowledge_hits = domains.find_terms(goal, KNOWLEDGE_TERMS)
+    format_hits = domains.find_terms(goal, FORMAT_TERMS)
+    cost_hits = domains.find_terms(goal, COST_TERMS)
+    prompt_hits = domains.find_terms(goal, PROMPT_TERMS)
     sample_text = " ".join(
         f"{r.example.prompt} {r.example.completion}" for r in audit.rows[:300] if r.example is not None
     )
@@ -314,7 +314,7 @@ def diagnose(
     # Goal text.
     if knowledge_hits:
         add(KNOWLEDGE, min(3, 1 + len(knowledge_hits)), f"goal mentions {_quote(knowledge_hits)}")
-    if changing_hits:
+    if domain_match and changing_hits:
         add(
             KNOWLEDGE,
             1,
@@ -413,7 +413,7 @@ def diagnose(
 
 def profile_dataset(audit: AuditReport) -> DatasetProfile:
     rows = [r for r in audit.rows if r.status == CLEAN and r.example is not None]
-    examples = [r.example for r in rows]
+    examples = [r.example for r in rows if r.example is not None]
     n = len(examples)
     if not n:
         return DatasetProfile(0, "prose", 0.0, 0, 0.0, 0.0, 0.0, 0.0)
@@ -623,20 +623,21 @@ def _domain_notes(d: Diagnosis) -> list[tuple[str, str]]:
         notes.append(
             ("✓", "No sensitive identifiers found (cards, national IDs, IBANs, accounts, phones, emails).")
         )
-    if d.changing_fact_terms:
+    domain = d.domain
+    if domain and d.changing_fact_terms:
         notes.append(
-            ("⚠", f"{d.domain.label} facts ({_quote(d.changing_fact_terms)}) {d.domain.changing_fact_note}")
+            ("⚠", f"{domain.label} facts ({_quote(d.changing_fact_terms)}) {domain.changing_fact_note}")
         )
-    if d.high_stakes_terms:
+    if domain and d.high_stakes_terms:
         notes.append(
             (
                 "⚠",
                 f"The goal involves automated decisions ({_quote(d.high_stakes_terms)}). "
-                + d.domain.high_stakes_note,
+                + domain.high_stakes_note,
             )
         )
-    if d.domain:
-        notes += [("•", note) for note in d.domain.closing_notes]
+    if domain:
+        notes += [("•", note) for note in domain.closing_notes]
     return notes
 
 
@@ -669,9 +670,6 @@ def _copy_ratio(example) -> float | None:
         return None
     prompt_words = set(_WORD_RE.findall(example.prompt.lower()))
     return sum(1 for w in words if w in prompt_words) / len(words)
-
-
-_find_terms = domains.find_terms
 
 
 def _quote(terms: list[str], limit: int = 3) -> str:

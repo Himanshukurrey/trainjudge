@@ -42,7 +42,7 @@ Full details: [skills/trainjudge/SKILL.md](skills/trainjudge/SKILL.md).
 ## Working on this repository
 
 - Setup: `pip install -e ".[dev]"` (add `mlx` on an Apple Silicon Mac, or `cuda` for the PyTorch backend).
-- Before finishing a change, run `pytest`, `ruff check .` and `ruff format --check .`.
+- Before finishing a change, run `pytest`, `ruff check .`, `ruff format --check .` and `mypy`.
 - Tests must not download models or need `mlx-lm` or `torch`, except
   `tests/test_torch_integration.py` (opt-in, its own CI job). Use the fake backends in
   `tests/test_training.py` and `tests/test_verify.py`.

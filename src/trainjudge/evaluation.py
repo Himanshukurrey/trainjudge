@@ -137,7 +137,9 @@ def evaluate_target(
         decoding=decoding,
         on_progress=on_progress,
     )
+    report: eval_sql.EvalReport | eval_json.EvalReport
     if task == tasks.SQL:
+        assert db_path is not None  # resolve_task requires one for SQL
         report = eval_sql.evaluate(eval_sql.Database(db_path), rows, outputs)
     else:
         report = eval_json.evaluate(rows, outputs)
@@ -249,3 +251,16 @@ def evaluate_regression(
     if cache is not None:
         _save_cached(cache, result)
     return result
+
+
+def accuracy_line(result: dict) -> str:
+    """One-line summary of an eval result: accuracy, the secondary metric and failure counts."""
+    outcomes = result["outcomes"]
+    correct = outcomes["correct"]
+    issues = [f"{n:,} {name.replace('_', ' ')}" for name, n in outcomes.items() if n and name != "correct"]
+    secondary = result.get("secondary") or {"label": "lenient", "value": result.get("lenient_accuracy", 0)}
+    line = (
+        f"Accuracy {result['accuracy']:.1%} ({correct:,}/{result['scored']:,}) · "
+        f"{secondary['label'].lower()} {secondary['value']:.1%}"
+    )
+    return line + (f" · {' · '.join(issues)}" if issues else "")

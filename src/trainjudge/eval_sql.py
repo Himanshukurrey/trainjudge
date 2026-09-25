@@ -26,6 +26,8 @@ from dataclasses import asdict, dataclass
 from itertools import permutations
 from pathlib import Path
 
+from trainjudge.textutil import strip_think
+
 CORRECT = "correct"
 WRONG_RESULT = "wrong_result"
 EXECUTION_ERROR = "execution_error"
@@ -37,7 +39,6 @@ OUTCOMES = (CORRECT, WRONG_RESULT, EXECUTION_ERROR, NO_SQL, TIMEOUT, GOLD_ERROR)
 QUERY_TIMEOUT_S = 5.0
 MAX_ROWS = 10_000
 
-_THINK_RE = re.compile(r"<think>.*?(?:</think>|$)", re.DOTALL | re.IGNORECASE)
 _FENCE_RE = re.compile(r"```[ \t]*(?:sql|sqlite)?[ \t]*\n(.*?)(?:```|$)", re.DOTALL | re.IGNORECASE)
 # SQL as conventionally written (uppercase keywords) is preferred over a
 # lowercase "select" or "with" that is more likely part of a sentence.
@@ -101,7 +102,7 @@ class EvalReport:
 
 def extract_sql(output: str) -> str | None:
     """Best-effort extraction of one SQL statement from raw model output."""
-    text = _THINK_RE.sub("", output).strip()
+    text = strip_think(output)
     for block in _FENCE_RE.findall(text):
         if any(r.search(block) for r in _SQL_START_RES):
             text = block

@@ -8,10 +8,12 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import cast
 
 from trainjudge import __version__, backends, pii, replay, runs, torch_backend
 from trainjudge.backend_base import DecodingConfig, LoraConfig, TrainingFailed, TrainingSummary
 from trainjudge.dataset_audit import LOW_QUALITY, AuditReport, audit_dataset
+from trainjudge.textutil import format_duration
 
 
 class SensitiveDataError(runs.RunError):
@@ -67,9 +69,9 @@ def prepare_run(
     if mask_sensitive:
         masked_rows = []
         for key, row in rows:
-            row, counts = pii.mask_value(row)
-            masked += counts
-            masked_rows.append((key, row))
+            masked_row, found = pii.mask_value(row)
+            masked += found
+            masked_rows.append((key, cast(dict, masked_row)))  # masking keeps a row a dict
         rows = masked_rows
         leftover = set().union(*(pii.scan_value(row) for _, row in rows)) if rows else set()
         if leftover and not allow_sensitive_data:
@@ -198,3 +200,55 @@ def run_training(prepared: PreparedRun, on_event=lambda e: None) -> TrainingSumm
         record["backend"].update(json.loads(device_file.read_text(encoding="utf-8")))
     runs.write_run_json(prepared.run_dir, record)
     return summary
+
+
+def describe_prepared(prepared: PreparedRun) -> list[str]:
+    """What `train` prints before training: the data, the split and the training setup."""
+    cfg = prepared.config
+    record = prepared.record
+    sizes = prepared.splits.sizes()
+    dropped = ", ".join(f"{n:,} {k.replace('_', '-')}" for k, n in prepared.dropped.items() if n)
+    lines = [
+        f"Prepared run {prepared.run_dir}/",
+        f"  Dataset:  {prepared.audit.total:,} rows → {record['prep']['kept']:,} usable"
+        + (f" (dropped {dropped})" if dropped else ""),
+        f"  Split:    {sizes['train']:,} train · {sizes['valid']:,} valid · "
+        f"{sizes['test']:,} test (held out for verify)",
+    ]
+    if masked := record["prep"].get("masked"):
+        lines.append("  Masked:   " + ", ".join(f"{n:,} {k}" for k, n in masked.items()))
+    backend = record["backend"]
+    if backend["name"] == backends.MLX:
+        lines += ["", "Training via MLX LoRA (local, Apple Silicon)..."]
+    else:
+        lines += [
+            "",
+            f"Training via PyTorch LoRA (transformers + peft, device: {backend.get('device', 'auto')})...",
+        ]
+    replay_count = record["prep"]["replay"]["requested"]
+    lines += [
+        f"  Base model:  {cfg.model}",
+        f"  Method:      LoRA (rank {cfg.rank}, {cfg.num_layers} layers, lr {cfg.learning_rate:g})",
+        f"  Examples:    {sizes['train']:,}" + (f" + {replay_count:,} replay" if replay_count else ""),
+        f"  Steps:       {cfg.iters:,} ({prepared.epochs:g} epochs, batch {cfg.batch_size})",
+    ]
+    return lines
+
+
+def describe_summary(summary: TrainingSummary, run_dir: Path) -> list[str]:
+    """What `train` prints when training finishes."""
+    lines = [f"Training finished in {format_duration(summary.duration_s)}."]
+    if summary.train_loss_drop_pct is not None:
+        lines.append(
+            f"  Train loss {summary.first_train_loss:.3f} → {summary.final_train_loss:.3f} "
+            f"({-summary.train_loss_drop_pct:+.1f}%)"
+        )
+    if summary.first_val_loss is not None:
+        lines.append(f"  Val loss   {summary.first_val_loss:.3f} → {summary.final_val_loss:.3f}")
+    lines += [
+        f"  Adapters:  {run_dir / 'adapters'}",
+        "",
+        "A lower loss doesn't prove the model got better at the task. Check with:",
+        f"  trainjudge verify {run_dir}",
+    ]
+    return lines

@@ -13,6 +13,7 @@ Thanks for considering a contribution. Here's the workflow.
    pytest
    ruff check .
    ruff format --check .
+   mypy
    ```
    CI runs the same checks on Linux, Windows and macOS, on Python 3.10 and 3.12. It also checks that the
    committed demo datasets match their generators. Running these locally first saves a round trip.

@@ -21,6 +21,8 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
 
+from trainjudge.textutil import strip_think
+
 CORRECT = "correct"
 WRONG_FIELDS = "wrong_fields"
 MISSING_FIELDS = "missing_fields"
@@ -29,7 +31,6 @@ NO_JSON = "no_json"
 GOLD_ERROR = "gold_error"
 OUTCOMES = (CORRECT, WRONG_FIELDS, MISSING_FIELDS, NOT_AN_OBJECT, NO_JSON, GOLD_ERROR)
 
-_THINK_RE = re.compile(r"<think>.*?(?:</think>|$)", re.DOTALL | re.IGNORECASE)
 _FENCE_RE = re.compile(r"```[ \t]*(?:json)?[ \t]*\n(.*?)(?:```|$)", re.DOTALL | re.IGNORECASE)
 _DECODER = json.JSONDecoder()
 
@@ -76,7 +77,7 @@ class EvalReport:
         right: dict[str, int] = defaultdict(int)
         seen: dict[str, int] = defaultdict(int)
         for e in self.scored:
-            for key in e.gold:
+            for key in e.gold or {}:
                 seen[key] += 1
                 right[key] += key not in e.wrong_fields and key not in e.missing_fields
         return {k: right[k] / seen[k] for k in seen}
@@ -95,7 +96,7 @@ class EvalReport:
 
 def extract_json(output: str) -> object | None:
     """The first JSON value in the output that decodes, preferring objects."""
-    text = _THINK_RE.sub("", output).strip()
+    text = strip_think(output)
     candidates = [block.strip() for block in _FENCE_RE.findall(text)] + [text]
     first_value = None
     for candidate in candidates:

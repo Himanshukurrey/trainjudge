@@ -48,16 +48,17 @@ def verify_run(
         if tracker:
             tracker.stage(name)
 
-    task, regression = {}, {}
+    task_evals: dict[str, dict] = {}
+    regression_evals: dict[str, dict] = {}
     for target in evaluation.TARGETS:
         label = "baseline" if target == evaluation.BASELINE else "fine-tuned"
         cached = None if rerun else evaluation.load_eval(run_dir, target)
-        if _usable(cached) and cached.get("task", "sql") == task_name:
+        if cached is not None and _usable(cached) and cached.get("task", "sql") == task_name:
             log(f"Using saved {label} task eval ({cached['accuracy']:.1%}).")
-            task[target] = cached
+            task_evals[target] = cached
         else:
             stage(f"eval:{target}", f"Evaluating {label} model on the held-out test split...")
-            task[target] = evaluation.evaluate_target(
+            task_evals[target] = evaluation.evaluate_target(
                 run_dir,
                 target,
                 db_path,
@@ -66,28 +67,31 @@ def verify_run(
                 task=task_name,
                 use_cache=not rerun,
             )
-            if task[target].get("cached_from"):
-                log(f"  reused the baseline from {task[target]['cached_from']} (same model and test split)")
+            if task_evals[target].get("cached_from"):
+                log(
+                    f"  reused the baseline from {task_evals[target]['cached_from']} "
+                    "(same model and test split)"
+                )
         cached = None if rerun else evaluation.load_eval(run_dir, target, regression=True)
         if cached is not None:
             log(f"Using saved {label} regression check.")
-            regression[target] = cached
+            regression_evals[target] = cached
         else:
             stage(f"regression:{target}", f"Running the regression check on the {label} model...")
-            regression[target] = evaluation.evaluate_regression(
+            regression_evals[target] = evaluation.evaluate_regression(
                 run_dir, target, on_progress=progress, generate=generate, use_cache=not rerun
             )
-            if regression[target].get("cached_from"):
-                log(f"  reused the baseline regression check from {regression[target]['cached_from']}")
+            if regression_evals[target].get("cached_from"):
+                log(f"  reused the baseline regression check from {regression_evals[target]['cached_from']}")
 
     if tracker:
         tracker.stage("verdict")
     training = run.get("training") or {}
     v = verdict.decide(
-        task[evaluation.BASELINE],
-        task[evaluation.FINETUNED],
-        regression[evaluation.BASELINE],
-        regression[evaluation.FINETUNED],
+        task_evals[evaluation.BASELINE],
+        task_evals[evaluation.FINETUNED],
+        regression_evals[evaluation.BASELINE],
+        regression_evals[evaluation.FINETUNED],
         train_loss_drop_pct=training.get("train_loss_drop_pct"),
         min_improvement=min_improvement,
         regression_tolerance=regression_tolerance,
@@ -115,10 +119,10 @@ def verify_run(
         reports.experiment_report(
             run,
             v,
-            task[evaluation.BASELINE],
-            task[evaluation.FINETUNED],
-            regression[evaluation.BASELINE],
-            regression[evaluation.FINETUNED],
+            task_evals[evaluation.BASELINE],
+            task_evals[evaluation.FINETUNED],
+            regression_evals[evaluation.BASELINE],
+            regression_evals[evaluation.FINETUNED],
             str(run_dir),
         ),
         encoding="utf-8",

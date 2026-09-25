@@ -22,6 +22,7 @@ from trainjudge import (
 )
 from trainjudge.backend_base import DecodingConfig, TrainingFailed
 from trainjudge.status import StatusTracker
+from trainjudge.textutil import format_duration
 
 NOTIFY_HELP = "Show a desktop notification (macOS) when the command finishes or fails."
 
@@ -194,29 +195,8 @@ def train(
         raise click.ClickException(str(e)) from e
 
     cfg = prepared.config
-    sizes = prepared.splits.sizes()
-    dropped = ", ".join(f"{n:,} {k.replace('_', '-')}" for k, n in prepared.dropped.items() if n)
-    click.echo(f"Prepared run {prepared.run_dir}/")
-    click.echo(
-        f"  Dataset:  {prepared.audit.total:,} rows → {prepared.record['prep']['kept']:,} "
-        f"usable" + (f" (dropped {dropped})" if dropped else "")
-    )
-    click.echo(
-        f"  Split:    {sizes['train']:,} train · {sizes['valid']:,} valid · "
-        f"{sizes['test']:,} test (held out for verify)"
-    )
-    if masked := prepared.record["prep"].get("masked"):
-        click.echo("  Masked:   " + ", ".join(f"{n:,} {k}" for k, n in masked.items()))
-    click.echo("")
-    if backend_name == backends.MLX:
-        click.echo("Training via MLX LoRA (local, Apple Silicon)...")
-    else:
-        click.echo(f"Training via PyTorch LoRA (transformers + peft, device: {device})...")
-    click.echo(f"  Base model:  {cfg.model}")
-    click.echo(f"  Method:      LoRA (rank {cfg.rank}, {cfg.num_layers} layers, lr {cfg.learning_rate:g})")
     replay_count = prepared.record["prep"]["replay"]["requested"]
-    click.echo(f"  Examples:    {sizes['train']:,}" + (f" + {replay_count:,} replay" if replay_count else ""))
-    click.echo(f"  Steps:       {cfg.iters:,} ({prepared.epochs:g} epochs, batch {cfg.batch_size})")
+    click.echo("\n".join(training.describe_prepared(prepared)))
 
     if dry_run:
         click.echo("\nDry run: not training. To train, run:\n  " + " ".join(prepared.command))
@@ -243,7 +223,7 @@ def train(
                 click.echo(
                     f"  step {event['iter']:>5,}/{cfg.iters:,} · train loss "
                     f"{event['loss']:.3f} · {event['it_per_sec']:.2f} it/s · "
-                    f"ETA {_duration(remaining)}"
+                    f"ETA {format_duration(remaining)}"
                 )
                 tracker.progress(event["iter"], eta_s=remaining, message=f"train loss {event['loss']:.3f}")
             else:
@@ -256,33 +236,11 @@ def train(
             click.echo(e.log_tail, err=True)
             raise click.ClickException(f"training failed: {e}. Full log: {e.log_path}") from e
         tracker.finish(
-            f"trained in {_duration(summary.duration_s)}; next: trainjudge verify {prepared.run_dir}",
+            f"trained in {format_duration(summary.duration_s)}; next: trainjudge verify {prepared.run_dir}",
             result="trained",
         )
 
-    click.echo("")
-    click.echo(f"Training finished in {_duration(summary.duration_s)}.")
-    if summary.train_loss_drop_pct is not None:
-        click.echo(
-            f"  Train loss {summary.first_train_loss:.3f} → {summary.final_train_loss:.3f} "
-            f"({-summary.train_loss_drop_pct:+.1f}%)"
-        )
-    if summary.first_val_loss is not None:
-        click.echo(f"  Val loss   {summary.first_val_loss:.3f} → {summary.final_val_loss:.3f}")
-    click.echo(f"  Adapters:  {prepared.run_dir / 'adapters'}")
-    click.echo("\nA lower loss doesn't prove the model got better at the task. Check with:")
-    click.echo(f"  trainjudge verify {prepared.run_dir}")
-
-
-def _duration(seconds: float) -> str:
-    seconds = round(seconds)
-    if seconds < 60:
-        return f"{seconds}s"
-    minutes, seconds = divmod(seconds, 60)
-    if minutes < 60:
-        return f"{minutes}m {seconds:02d}s"
-    hours, minutes = divmod(minutes, 60)
-    return f"{hours}h {minutes:02d}m"
+    click.echo("\n" + "\n".join(training.describe_summary(summary, prepared.run_dir)))
 
 
 @main.command("eval")
@@ -361,7 +319,7 @@ def eval_command(
             except runs.RunError as e:
                 raise click.ClickException(str(e)) from e
             results[t] = result
-            log(f"  {_accuracy_line(result)}\n")
+            log(f"  {evaluation.accuracy_line(result)}\n")
         tracker.finish(" · ".join(f"{t} {r['accuracy']:.1%}" for t, r in results.items()), result="evaluated")
 
     if as_json:
@@ -376,18 +334,6 @@ def eval_command(
         delta = (results["finetuned"]["accuracy"] - results["baseline"]["accuracy"]) * 100
         click.echo(f"Change: {delta:+.1f} points. Run `trainjudge verify {run}` for the verdict.")
     click.echo(f"Per-example results: {run / 'eval'}/")
-
-
-def _accuracy_line(result: dict) -> str:
-    outcomes = result["outcomes"]
-    correct = outcomes["correct"]
-    issues = [f"{n:,} {name.replace('_', ' ')}" for name, n in outcomes.items() if n and name != "correct"]
-    secondary = result.get("secondary") or {"label": "lenient", "value": result.get("lenient_accuracy", 0)}
-    line = (
-        f"Accuracy {result['accuracy']:.1%} ({correct:,}/{result['scored']:,}) · "
-        f"{secondary['label'].lower()} {secondary['value']:.1%}"
-    )
-    return line + (f" · {' · '.join(issues)}" if issues else "")
 
 
 @main.command()
@@ -494,8 +440,6 @@ def status_command(
     as_json: bool,
 ) -> None:
     """Show what a train/eval/verify job is doing: stage, progress, ETA, finished or not."""
-    import time
-
     from trainjudge import status as st
 
     if show_all:
@@ -517,72 +461,20 @@ def status_command(
             raise click.ClickException(f"No runs with status in {runs_dir}/.")
         path = found[0][0]
 
-    if milestones:
-        # A job that was just launched may not have written its status yet.
-        deadline = time.monotonic() + 60
-        while st.read_status(path) is None and time.monotonic() < deadline:
-            time.sleep(1)
-    status = st.read_status(path)
+    # A job that was just launched may not have written its status yet.
+    status = st.wait_for_status(path, timeout_s=60) if milestones else st.read_status(path)
     if status is None:
         raise click.ClickException(
             f"{path} has no {st.STATUS_FILE} (no train/eval/verify has run there yet)."
         )
     if as_json:
         click.echo(json.dumps({**status, "state": st.effective_state(status)}, indent=2))
-        return
-    if milestones:
-        raise SystemExit(_watch_milestones(path, status, interval))
-    click.echo(st.format_status(path, status))
-    if not watch:
-        return
-
-    last = None
-    while st.effective_state(status) == st.RUNNING:
-        line = st.progress_text(status)
-        if line != last:
-            click.echo(f"  … {line}")
-            last = line
-        time.sleep(interval)
-        status = st.read_status(path) or status
-    click.echo("")
-    click.echo(st.format_status(path, status))
-    if st.effective_state(status) != st.DONE:
-        raise SystemExit(1)
-
-
-def _watch_milestones(path: Path, status: dict, interval: float) -> int:
-    """Print one flushed line per milestone until the job ends; return the exit code."""
-    import time
-
-    from trainjudge import status as st
-
-    def say(text: str) -> None:
-        click.echo(f"[trainjudge {status['command']}] {text}")
-
-    announced: set[tuple] = set()
-    seen_stages = 0
-    while True:
-        for s in status.get("stages", [])[seen_stages:]:
-            say(f"✓ {s['label']} done ({st._duration(s['duration_s'])})")
-        seen_stages = len(status.get("stages", []))
-
-        state = st.effective_state(status)
-        if state != st.RUNNING:
-            mark = {st.DONE: "✓ finished", st.FAILED: "✗ failed", st.INTERRUPTED: "■ interrupted"}
-            say(f"{mark.get(state, '✗ stopped (process gone)')}: {status.get('message') or ''}".rstrip(": "))
-            return 0 if state == st.DONE else 1
-
-        stage, step, total = status.get("stage"), status.get("step") or 0, status.get("total")
-        if stage and (stage, "start") not in announced:
-            announced.add((stage, "start"))
-            say(f"▶ {status['stage_label']} started" + (f" ({total:,} items)" if total else ""))
-        if stage and total:
-            quarter = min(3, int(step / total * 4))
-            if quarter and (stage, quarter) not in announced:
-                announced.update((stage, q) for q in range(1, quarter + 1))
-                say(f"… {st.progress_text(status)}")
-        time.sleep(interval)
-        status = st.read_status(path) or status
+    elif milestones:
+        raise SystemExit(st.watch_milestones(path, status, interval, click.echo))
+    elif watch:
+        raise SystemExit(st.watch(path, status, interval, click.echo))
+    else:
+        click.echo(st.format_status(path, status))
 
 
 if __name__ == "__main__":

@@ -15,8 +15,12 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+from trainjudge.textutil import format_duration
 
 STATUS_FILE = "status.json"
 RUNNING, DONE, FAILED, INTERRUPTED = "running", "done", "failed", "interrupted"
@@ -108,7 +112,7 @@ class StatusTracker:
         self.run_dir = run_dir
         self.command = command
         self.notify_on_finish = notify_on_finish
-        self.data = {
+        self.data: dict[str, Any] = {
             "run": str(run_dir),
             "command": command,
             "state": RUNNING,
@@ -205,7 +209,7 @@ class StatusTracker:
     def __enter__(self) -> StatusTracker:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> bool:
+    def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             if self.data["state"] == RUNNING:
                 self.finish(f"{self.command} finished")
@@ -213,7 +217,6 @@ class StatusTracker:
             self.fail("interrupted by the user", INTERRUPTED)
         elif self.data["state"] == RUNNING:
             self.fail(str(exc) or exc_type.__name__)
-        return False
 
 
 def find_runs(runs_dir: Path) -> list[tuple[Path, dict]]:
@@ -231,19 +234,6 @@ def find_runs(runs_dir: Path) -> list[tuple[Path, dict]]:
     return sorted(found, key=key, reverse=True)
 
 
-def _duration(seconds: float | None) -> str:
-    if seconds is None:
-        return "?"
-    seconds = round(seconds)
-    if seconds < 60:
-        return f"{seconds}s"
-    minutes, seconds = divmod(seconds, 60)
-    if minutes < 60:
-        return f"{minutes}m {seconds:02d}s"
-    hours, minutes = divmod(minutes, 60)
-    return f"{hours}h {minutes:02d}m"
-
-
 def progress_text(status: dict) -> str:
     if not status.get("stage_label"):
         return ""
@@ -252,7 +242,7 @@ def progress_text(status: dict) -> str:
     if total:
         text += f" · {step or 0:,}/{total:,} ({(step or 0) / total:.0%})"
     if status.get("eta_s") is not None:
-        text += f" · ETA {_duration(status['eta_s'])}"
+        text += f" · ETA {format_duration(status['eta_s'])}"
     return text
 
 
@@ -278,12 +268,12 @@ def format_status(run_dir: Path, status: dict) -> str:
     else:
         lines.append(f"  Result:   {status.get('message')}")
     lines.append(
-        f"  Started:  {_duration(_age_s(status.get('started_at')))} ago · last update "
-        f"{_duration(_age_s(status.get('updated_at')))} ago"
+        f"  Started:  {format_duration(_age_s(status.get('started_at')))} ago · last update "
+        f"{format_duration(_age_s(status.get('updated_at')))} ago"
     )
     for s in status.get("stages", []):
         mark = "✓" if s["state"] == DONE else "✗"
-        lines.append(f"    {mark} {s['label']} ({_duration(s['duration_s'])})")
+        lines.append(f"    {mark} {s['label']} ({format_duration(s['duration_s'])})")
     return "\n".join(lines)
 
 
@@ -291,3 +281,65 @@ def one_line(run_dir: Path, status: dict) -> str:
     state = effective_state(status)
     detail = progress_text(status) if state == RUNNING else (status.get("message") or "")
     return f"{run_dir.name:<34} {status['command']:<7} {STATE_MARKS[state]:<14} {detail}"
+
+
+def wait_for_status(run_dir: Path, timeout_s: float = 60.0, poll_s: float = 1.0) -> dict | None:
+    """The run's status, waiting up to `timeout_s` for a just-launched job to write it."""
+    deadline = time.monotonic() + timeout_s
+    status = read_status(run_dir)
+    while status is None and time.monotonic() < deadline:
+        time.sleep(poll_s)
+        status = read_status(run_dir)
+    return status
+
+
+def watch(run_dir: Path, status: dict, interval: float, echo: Callable[[str], None]) -> int:
+    """Print the status, then each progress change until the job ends; return the exit code."""
+    echo(format_status(run_dir, status))
+    last = None
+    while effective_state(status) == RUNNING:
+        line = progress_text(status)
+        if line != last:
+            echo(f"  … {line}")
+            last = line
+        time.sleep(interval)
+        status = read_status(run_dir) or status
+    echo("")
+    echo(format_status(run_dir, status))
+    return 0 if effective_state(status) == DONE else 1
+
+
+def watch_milestones(run_dir: Path, status: dict, interval: float, echo: Callable[[str], None]) -> int:
+    """Print one line per milestone until the job ends; return the exit code.
+
+    Milestones: a stage starts, reaches 25/50/75%, finishes (with its duration), and
+    the job finishes or fails. Each line is meant to become one notification.
+    """
+
+    def say(text: str) -> None:
+        echo(f"[trainjudge {status['command']}] {text}")
+
+    announced: set[tuple[str, object]] = set()
+    seen_stages = 0
+    while True:
+        for s in status.get("stages", [])[seen_stages:]:
+            say(f"✓ {s['label']} done ({format_duration(s['duration_s'])})")
+        seen_stages = len(status.get("stages", []))
+
+        state = effective_state(status)
+        if state != RUNNING:
+            mark = {DONE: "✓ finished", FAILED: "✗ failed", INTERRUPTED: "■ interrupted"}
+            say(f"{mark.get(state, '✗ stopped (process gone)')}: {status.get('message') or ''}".rstrip(": "))
+            return 0 if state == DONE else 1
+
+        stage, step, total = status.get("stage"), status.get("step") or 0, status.get("total")
+        if stage and (stage, "start") not in announced:
+            announced.add((stage, "start"))
+            say(f"▶ {status['stage_label']} started" + (f" ({total:,} items)" if total else ""))
+        if stage and total:
+            quarter = min(3, int(step / total * 4))
+            if quarter and (stage, quarter) not in announced:
+                announced.update((stage, q) for q in range(1, quarter + 1))
+                say(f"… {progress_text(status)}")
+        time.sleep(interval)
+        status = read_status(run_dir) or status

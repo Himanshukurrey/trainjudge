@@ -66,12 +66,12 @@ def training_rows(report: AuditReport, keep_low_quality: bool = False) -> list[t
     normalized completion, so paraphrases of one answer stay in one split.
     """
     keep = {CLEAN, LOW_QUALITY} if keep_low_quality else {CLEAN}
-    fields = FORMAT_FIELDS.get(report.format)
+    fields = FORMAT_FIELDS.get(report.format or "")
     if fields is None:
         raise RunError("dataset format not recognized; nothing to train on")
     rows = []
     for r in report.rows:
-        if r.status in keep:
+        if r.status in keep and r.example is not None:  # kept rows always parsed
             obj = json.loads(r.raw)
             rows.append((normalize(r.example.completion), {k: obj[k] for k in fields}))
     return rows

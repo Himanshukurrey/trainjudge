@@ -21,6 +21,9 @@ import json
 import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from typing import Any
+
+from trainjudge.textutil import strip_think
 
 INSTRUCTION_FOLLOWING = "instruction_following"
 FORMAT_COMPLIANCE = "format_compliance"
@@ -32,7 +35,6 @@ CATEGORY_LABELS = {
     HALLUCINATION: "Hallucination resistance",
 }
 
-_THINK_RE = re.compile(r"<think>.*?(?:</think>|$)", re.DOTALL | re.IGNORECASE)
 _FENCE_RE = re.compile(r"^```[a-z]*\s*\n?(.*?)\n?```\s*$", re.DOTALL | re.IGNORECASE)
 _UNCERTAIN_RE = re.compile(
     r"\b(i don'?t know|i do not know|not aware|no (?:reliable |available |public )?information|"
@@ -193,7 +195,7 @@ def build_suite() -> list[Item]:
 
 
 def clean_output(output: str) -> str:
-    return _THINK_RE.sub("", output).strip()
+    return strip_think(output)
 
 
 def _json_value(text: str):
@@ -224,7 +226,7 @@ def check_ends_with(text: str, suffix: str) -> bool:
 
 def check_number(text: str, expected: int) -> bool:
     m = re.fullmatch(r"[*\s]*(-?[\d,]+)[.\s*]*", text)
-    return bool(m) and m.group(1).replace(",", "") == str(expected)
+    return m is not None and m.group(1).replace(",", "") == str(expected)
 
 
 def check_json_keys(text: str, keys: list[str]) -> bool:
@@ -254,7 +256,7 @@ def check_uncertain(text: str, _=None) -> bool:
     return bool(_UNCERTAIN_RE.search(text))
 
 
-CHECKS: dict[str, Callable[[str, object], bool]] = {
+CHECKS: dict[str, Callable[[str, Any], bool]] = {
     "bullets": check_bullets,
     "lowercase": check_lowercase,
     "max_words": check_max_words,

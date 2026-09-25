@@ -147,7 +147,7 @@ def audit_dataset(path: str | Path) -> AuditReport:
             rows.append(RowResult(lineno, MALFORMED, str(e), raw))
             continue
 
-        fields = tuple(obj)
+        fields = tuple(obj) if isinstance(obj, dict) else ()
         key = (normalize(example.prompt), normalize(example.completion))
         if key in first_seen:
             reason = f"duplicate of line {first_seen[key]}"
@@ -226,7 +226,7 @@ def format_report(report: AuditReport, max_examples: int = 5) -> str:
         "TRAINJUDGE DATASET AUDIT",
         "",
         f"Dataset: {report.path}",
-        f"Format:  {FORMAT_NAMES.get(report.format, 'unrecognized')}",
+        f"Format:  {FORMAT_NAMES.get(report.format or '', 'unrecognized')}",
         f"  {report.total:,} examples",
         f"  {summary_line(report)}",
     ]
@@ -306,7 +306,8 @@ def _extract(obj: object, fmt: str | None) -> Example:
     if row_fmt is None:
         raise MalformedRow("no prompt/completion, messages or text field")
     if row_fmt != fmt:
-        raise MalformedRow(f"{FORMAT_NAMES[row_fmt]} row in a {FORMAT_NAMES[fmt]} dataset")
+        dataset_fmt = FORMAT_NAMES.get(fmt or "", "different")
+        raise MalformedRow(f"{FORMAT_NAMES[row_fmt]} row in a {dataset_fmt} dataset")
     if fmt == "completions":
         return Example(_text_field(obj, "prompt"), _text_field(obj, "completion"))
     if fmt == "text":

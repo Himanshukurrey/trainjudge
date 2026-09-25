@@ -44,6 +44,7 @@ cuda = [
 dev = [
     "pytest>=8",
     "ruff>=0.6",
+    "mypy>=1.10",
 ]
 
 [project.urls]
@@ -74,3 +75,18 @@ select = ["E", "F", "I", "UP"]
 [tool.ruff.lint.per-file-ignores]
 # Fact tables: one fact per line reads better than wrapped strings.
 "demo/domains/generate.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/trainjudge"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+# The ML libraries are optional, heavy and only partly typed; treat them as untyped
+# (they aren't installed in the lint job either).
+[[tool.mypy.overrides]]
+module = ["torch", "torch.*", "transformers", "transformers.*", "peft", "peft.*", "mlx", "mlx.*",
+          "mlx_lm", "mlx_lm.*", "numpy", "numpy.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
