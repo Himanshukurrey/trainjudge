@@ -11,6 +11,7 @@ from trainjudge import (
     __version__,
     dataset_audit,
     diagnosis,
+    domains,
     evaluation,
     mlx_backend,
     runs,
@@ -38,11 +39,20 @@ def main() -> None:
     default=None,
     help="Whether few-shot prompting has already been tried (default: unknown).",
 )
+@click.option(
+    "--domain",
+    type=click.Choice(["auto", "none", *sorted(domains.PACKS)]),
+    default="auto",
+    show_default=True,
+    help="Domain pack for industry-specific checks: detect it, turn it off, or force one.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Print the diagnosis as JSON.")
-def diagnose(dataset: str, model: str, goal: str, tried_prompting: bool | None, as_json: bool) -> None:
+def diagnose(
+    dataset: str, model: str, goal: str, tried_prompting: bool | None, domain: str, as_json: bool
+) -> None:
     """Classify the goal: knowledge / format / cost / prompt gap."""
     report = dataset_audit.audit_dataset(dataset)
-    result = diagnosis.diagnose(goal, report, model=model, tried_prompting=tried_prompting)
+    result = diagnosis.diagnose(goal, report, model=model, tried_prompting=tried_prompting, domain=domain)
     if as_json:
         click.echo(json.dumps(result.to_dict(), indent=2))
     else:

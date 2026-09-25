@@ -25,7 +25,7 @@ Apple Silicon Mac; `diagnose` and `audit` run anywhere.
 trainjudge diagnose --dataset <path.jsonl> --model <model> --goal "<the user's goal, in their words>"
 ```
 
-Show the user the classification, the evidence and any BFSI / sensitive-data
+Show the user the classification, the evidence and any domain / sensitive-data
 warnings. Then:
 
 - **KNOWLEDGE GAP** or **PROMPT-ENGINEERING GAP**: tell the user TrainJudge
@@ -42,7 +42,7 @@ score; you may disagree with the classification, but say so and explain why
 rather than silently overriding it.
 
 **2. If the dataset has sensitive data** (card numbers, Aadhaar, PAN, account
-numbers, UPI IDs, phones, emails), `train` refuses to run. Tell the user and
+numbers, UPI IDs, SSNs, IBANs, phones, emails), `train` refuses to run. Tell the user and
 suggest masking. Never pass `--allow-sensitive-data` unless the user explicitly
 asks for it.
 

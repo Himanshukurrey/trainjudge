@@ -1,0 +1,44 @@
+name: Domain pack request
+description: Ask for TrainJudge checks tailored to an industry (healthcare, legal, retail, ...)
+labels: ["domain-pack"]
+body:
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      placeholder: "Healthcare"
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: What do people fine-tune for in this domain?
+      description: Typical goals, e.g. "extract diagnosis codes from clinical notes" or "answer questions about drug dosing".
+    validations:
+      required: true
+
+  - type: textarea
+    id: changing-facts
+    attributes:
+      label: Facts that change
+      description: Information that goes stale and should live in retrieval, e.g. clinical guidelines or prices.
+
+  - type: textarea
+    id: high-stakes
+    attributes:
+      label: High-stakes decisions
+      description: Decisions about people that shouldn't be fully automated, e.g. triage or candidate screening.
+
+  - type: textarea
+    id: sensitive-data
+    attributes:
+      label: Sensitive identifiers
+      description: IDs or formats that appear in this domain's data and should be masked before training.
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to help build or review this pack

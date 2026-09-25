@@ -19,8 +19,9 @@ import json
 import re
 import statistics
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
+from trainjudge import domains, pii
 from trainjudge.dataset_audit import CLEAN, AuditReport, normalize, summary_line
 
 KNOWLEDGE = "knowledge"
@@ -136,90 +137,6 @@ PROMPT_TERMS = [
     "inconsistent",
 ]
 
-# Banking, financial services and insurance.
-BFSI_TERMS = [
-    "bank",
-    "banking",
-    "loan",
-    "loans",
-    "emi",
-    "kyc",
-    "re-kyc",
-    "aml",
-    "savings account",
-    "fixed deposit",
-    "credit card",
-    "debit card",
-    "upi",
-    "neft",
-    "rtgs",
-    "imps",
-    "nach",
-    "insurance",
-    "premium",
-    "claim",
-    "claims",
-    "policyholder",
-    "underwriting",
-    "mutual fund",
-    "sip",
-    "nav",
-    "demat",
-    "rbi",
-    "sebi",
-    "irdai",
-    "npci",
-    "nbfc",
-    "fraud",
-    "chargeback",
-    "transaction",
-    "transactions",
-    "cibil",
-    "credit score",
-    "interest rate",
-    "repo rate",
-    "aeps",
-    "ifsc",
-    "forex",
-]
-# Facts that move with rate resets, regulator circulars and product changes.
-REGULATED_FACT_TERMS = [
-    "interest rate",
-    "interest rates",
-    "rates",
-    "repo rate",
-    "charges",
-    "fees",
-    "schedule of charges",
-    "kyc norms",
-    "circular",
-    "circulars",
-    "master direction",
-    "rbi",
-    "sebi",
-    "irdai",
-    "tds",
-    "limits",
-    "premium rates",
-    "tariff",
-]
-HIGH_STAKES_TERMS = [
-    "approve",
-    "approval",
-    "reject",
-    "rejection",
-    "decline",
-    "credit decision",
-    "loan decision",
-    "underwriting decision",
-    "creditworthiness",
-    "credit scoring",
-    "claim approval",
-    "claim settlement",
-    "deny claims",
-    "sanction",
-]
-
 SOURCE_FIELDS = {
     "source",
     "sources",
@@ -319,17 +236,23 @@ class Diagnosis:
     profile: DatasetProfile
     audit: AuditReport
     tried_prompting: bool | None
-    bfsi_terms: list[str] = field(default_factory=list)
-    regulated_terms: list[str] = field(default_factory=list)
-    high_stakes_terms: list[str] = field(default_factory=list)
+    domain_match: domains.DomainMatch | None = None
 
     @property
     def fine_tune_recommended(self) -> bool:
         return self.classification in (FORMAT, COST)
 
     @property
-    def bfsi(self) -> bool:
-        return bool(self.bfsi_terms)
+    def domain(self) -> domains.DomainPack | None:
+        return self.domain_match.pack if self.domain_match else None
+
+    @property
+    def changing_fact_terms(self) -> list[str]:
+        return self.domain_match.changing_fact_terms if self.domain_match else []
+
+    @property
+    def high_stakes_terms(self) -> list[str]:
+        return self.domain_match.high_stakes_terms if self.domain_match else []
 
     def to_dict(self) -> dict:
         return {
@@ -343,12 +266,17 @@ class Diagnosis:
             "evidence": self.evidence,
             "tried_prompting": self.tried_prompting,
             "profile": {**self.profile.__dict__, "grounded": self.profile.grounded},
-            "bfsi": {
-                "detected": self.bfsi,
-                "terms": self.bfsi_terms,
-                "regulated_fact_terms": self.regulated_terms,
-                "high_stakes_terms": self.high_stakes_terms,
-            },
+            "domain": (
+                {
+                    "name": self.domain.name,
+                    "label": self.domain.label,
+                    "terms": self.domain_match.terms,
+                    "changing_fact_terms": self.changing_fact_terms,
+                    "high_stakes_terms": self.high_stakes_terms,
+                }
+                if self.domain
+                else None
+            ),
             "audit": {
                 "total": self.audit.total,
                 "counts": self.audit.counts(),
@@ -359,7 +287,11 @@ class Diagnosis:
 
 
 def diagnose(
-    goal: str, audit: AuditReport, model: str = "", tried_prompting: bool | None = None
+    goal: str,
+    audit: AuditReport,
+    model: str = "",
+    tried_prompting: bool | None = None,
+    domain: str = "auto",
 ) -> Diagnosis:
     profile = profile_dataset(audit)
     scores = {b: 0 for b in BUCKETS}
@@ -373,20 +305,21 @@ def diagnose(
     format_hits = _find_terms(goal, FORMAT_TERMS)
     cost_hits = _find_terms(goal, COST_TERMS)
     prompt_hits = _find_terms(goal, PROMPT_TERMS)
-    regulated_hits = _find_terms(goal, REGULATED_FACT_TERMS)
     sample_text = " ".join(
         f"{r.example.prompt} {r.example.completion}" for r in audit.rows[:300] if r.example is not None
     )
-    bfsi_hits = _find_terms(f"{goal} {sample_text}", BFSI_TERMS)
-    if not _find_terms(goal, BFSI_TERMS) and len(bfsi_hits) < 3:
-        bfsi_hits = []
-    high_stakes_hits = _find_terms(goal, HIGH_STAKES_TERMS) if bfsi_hits else []
+    domain_match = domains.detect(goal, sample_text, domain)
+    changing_hits = domain_match.changing_fact_terms if domain_match else []
 
     # Goal text.
     if knowledge_hits:
         add(KNOWLEDGE, min(3, 1 + len(knowledge_hits)), f"goal mentions {_quote(knowledge_hits)}")
-    if regulated_hits and bfsi_hits:
-        add(KNOWLEDGE, 1, f"goal involves regulated facts that change ({_quote(regulated_hits)})")
+    if changing_hits:
+        add(
+            KNOWLEDGE,
+            1,
+            f"goal involves {domain_match.pack.label} facts that change ({_quote(changing_hits)})",
+        )
     if format_hits:
         add(FORMAT, min(3, 1 + len(format_hits)), f"goal mentions {_quote(format_hits)}")
     if cost_hits:
@@ -474,9 +407,7 @@ def diagnose(
         profile=profile,
         audit=audit,
         tried_prompting=tried_prompting,
-        bfsi_terms=bfsi_hits,
-        regulated_terms=regulated_hits if bfsi_hits else [],
-        high_stakes_terms=high_stakes_hits,
+        domain_match=domain_match,
     )
 
 
@@ -542,9 +473,9 @@ def format_diagnosis(d: Diagnosis) -> str:
         for i, step in enumerate(steps, start=1):
             lines += _wrap(step, first=f"  {i}. ", rest="     ")
 
-    if d.bfsi or audit.sensitive:
-        lines += ["", "BFSI checks:" if d.bfsi else "Data checks:"]
-        for marker, text in _bfsi_notes(d):
+    if d.domain or audit.sensitive:
+        lines += ["", f"{d.domain.label} checks:" if d.domain else "Data checks:"]
+        for marker, text in _domain_notes(d):
             lines += _wrap(text, first=f"  {marker} ", rest="    ")
 
     counts = audit.counts()
@@ -581,9 +512,7 @@ def format_diagnosis(d: Diagnosis) -> str:
 def _advice(d: Diagnosis) -> tuple[str, str, list[str]]:
     p = d.profile
     if d.classification == KNOWLEDGE:
-        changing = "policy updates, new products"
-        if d.bfsi:
-            changing = "rate resets, revised charges, regulator circulars, new products"
+        changing = d.domain.changing_facts if d.domain else "policy updates, new products"
         why = (
             "your dataset teaches the model to recall specific facts that will change over "
             f"time ({changing}). Fine-tuning bakes these facts into weights, so updating them "
@@ -592,7 +521,7 @@ def _advice(d: Diagnosis) -> tuple[str, str, list[str]]:
         )
         steps = [
             "Index the source documents with a retrieval pipeline"
-            + (" (keep effective dates on each document)" if d.bfsi else ""),
+            + (d.domain.retrieval_hint if d.domain else ""),
             "Use the base model with retrieved context in the prompt",
             (
                 "If answers are still wrong, THEN consider fine-tuning the answer *format* "
@@ -673,53 +602,41 @@ def _mixed_hint(primary: str, secondary: str) -> str:
     return "Review the evidence for both before training."
 
 
-def _bfsi_notes(d: Diagnosis) -> list[tuple[str, str]]:
-    """(marker, paragraph) pairs for the BFSI / data checks section."""
+def _domain_notes(d: Diagnosis) -> list[tuple[str, str]]:
+    """(marker, paragraph) pairs for the domain / data checks section."""
     notes = []
     sensitive = d.audit.sensitive
     if sensitive:
         rows = {line for lines in sensitive.values() for line in lines}
         kinds = ", ".join(f"{k} ({len(v):,})" for k, v in sensitive.items())
+        refs = pii.references(sensitive)
+        see = f" (see {' and '.join(refs)})" if refs else ""
         notes.append(
             (
                 "⚠",
-                (
-                    f"Sensitive data in {len(rows):,} rows: {kinds}. Mask or tokenize "
-                    "before training. Fine-tuned models can memorize and repeat customer "
-                    "data (see India's DPDP Act 2023 and PCI DSS). Run `trainjudge audit` "
-                    "for line numbers."
-                ),
+                f"Sensitive data in {len(rows):,} rows: {kinds}. Mask or tokenize before training. "
+                f"Fine-tuned models can memorize and repeat personal data{see}. "
+                "Run `trainjudge audit` for line numbers.",
             )
         )
-    elif d.bfsi:
-        notes.append(("✓", ("No card, Aadhaar, PAN, account, UPI, phone or email identifiers found.")))
-    if d.regulated_terms:
+    elif d.domain:
         notes.append(
-            (
-                "⚠",
-                (
-                    f"Regulated facts ({_quote(d.regulated_terms)}) change with rate "
-                    "resets and circulars. Serve them from versioned documents with "
-                    "effective dates and citations, so every answer can be traced for "
-                    "audit."
-                ),
-            )
+            ("✓", "No sensitive identifiers found (cards, national IDs, IBANs, accounts, phones, emails).")
+        )
+    if d.changing_fact_terms:
+        notes.append(
+            ("⚠", f"{d.domain.label} facts ({_quote(d.changing_fact_terms)}) {d.domain.changing_fact_note}")
         )
     if d.high_stakes_terms:
         notes.append(
             (
                 "⚠",
-                (
-                    f"The goal involves automated decisions "
-                    f"({_quote(d.high_stakes_terms)}). Keep a human in the loop and "
-                    "prefer interpretable models for the decision itself. Customers may "
-                    "be owed reasons for adverse outcomes, and outcomes should be checked "
-                    "for bias across customer groups."
-                ),
+                f"The goal involves automated decisions ({_quote(d.high_stakes_terms)}). "
+                + d.domain.high_stakes_note,
             )
         )
-    if d.bfsi:
-        notes.append(("•", ("Keep this diagnosis and the run's EXPERIMENT_REPORT.md for model-risk review.")))
+    if d.domain:
+        notes += [("•", note) for note in d.domain.closing_notes]
     return notes
 
 
@@ -754,9 +671,7 @@ def _copy_ratio(example) -> float | None:
     return sum(1 for w in words if w in prompt_words) / len(words)
 
 
-def _find_terms(text: str, terms: list[str]) -> list[str]:
-    lowered = text.lower()
-    return [t for t in terms if re.search(rf"(?<![\w-]){re.escape(t)}(?![\w-])", lowered)]
+_find_terms = domains.find_terms
 
 
 def _quote(terms: list[str], limit: int = 3) -> str:

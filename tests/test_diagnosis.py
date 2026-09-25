@@ -35,7 +35,7 @@ def test_sql_demo_is_a_format_gap():
     assert d.confidence == "high"
     assert d.fine_tune_recommended
     assert d.profile.output_shape == "sql"
-    assert not d.bfsi
+    assert d.domain is None
 
 
 def test_policy_demo_is_a_knowledge_gap():
@@ -45,14 +45,14 @@ def test_policy_demo_is_a_knowledge_gap():
     assert not d.fine_tune_recommended
     assert d.profile.distinct_completions == 36
     assert d.profile.source_field_rate == 1.0
-    assert not d.bfsi  # retail warranty "claims" alone aren't BFSI
+    assert d.domain is None  # retail warranty "claims" alone aren't BFSI
 
 
 def test_bfsi_transactions_is_a_format_gap_with_sensitive_data():
     d = run("bfsi_transactions", "categorize bank transaction narrations into our category JSON")
     assert d.classification == FORMAT
     assert d.profile.output_shape == "json"
-    assert d.bfsi
+    assert d.domain.name == "bfsi"
     assert set(d.audit.sensitive) == {
         "card number",
         "Aadhaar number",
@@ -71,8 +71,8 @@ def test_bfsi_loan_faq_is_a_knowledge_gap_with_regulated_facts():
         "answer customer questions about our loan and FD interest rates and charges",
     )
     assert d.classification == KNOWLEDGE
-    assert d.bfsi
-    assert "interest rates" in d.regulated_terms
+    assert d.domain.name == "bfsi"
+    assert "interest rates" in d.changing_fact_terms
     text = " ".join(format_diagnosis(d).split())
     assert "regulator circulars" in text
     assert "effective dates" in text

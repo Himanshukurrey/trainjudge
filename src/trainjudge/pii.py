@@ -1,10 +1,15 @@
-"""Detect sensitive identifiers common in BFSI data.
+"""Detect sensitive identifiers in training data, across regions.
 
-Checks for payment card numbers, Aadhaar numbers, PANs, bank account
-numbers, UPI IDs, Indian mobile numbers and email addresses. Detectors
-use checksums (Luhn for cards, Verhoeff for Aadhaar) or context keywords
-to keep false positives low. Findings carry line numbers only; matched
-values are never stored or printed.
+- Global: payment card numbers (Luhn-checked), IBANs (mod-97-checked),
+  international phone numbers, email addresses
+- India: Aadhaar (Verhoeff-checked), PAN, UPI IDs, mobile numbers
+- US: Social Security numbers, formatted phone numbers
+- UK: National Insurance numbers
+- Bank account numbers when labelled as such
+
+Detectors use checksums, official format rules or context keywords to keep
+false positives low. Findings carry line numbers only; matched values are
+never stored or printed.
 """
 
 from __future__ import annotations
@@ -16,9 +21,23 @@ AADHAAR = "Aadhaar number"
 PAN = "PAN"
 ACCOUNT = "account number"
 UPI_ID = "UPI ID"
+SSN = "US SSN"
+UK_NINO = "UK National Insurance number"
+IBAN = "IBAN"
 PHONE = "phone number"
 EMAIL = "email address"
-KINDS = (CARD, AADHAAR, PAN, ACCOUNT, UPI_ID, PHONE, EMAIL)
+KINDS = (CARD, AADHAAR, PAN, ACCOUNT, UPI_ID, SSN, UK_NINO, IBAN, PHONE, EMAIL)
+
+# Where to look for obligations when a kind is found. Pointers, not legal advice.
+KIND_REFERENCES = {
+    CARD: "PCI DSS",
+    AADHAAR: "India's DPDP Act 2023",
+    PAN: "India's DPDP Act 2023",
+    UPI_ID: "India's DPDP Act 2023",
+    SSN: "US state privacy and breach-notification laws",
+    UK_NINO: "UK GDPR",
+    IBAN: "GDPR",
+}
 
 _CARD_RE = re.compile(r"(?<![\d-])(?:\d[ -]?){14,18}\d(?![\d-])")
 _CARD_LENGTHS = {15, 16, 19}
@@ -38,6 +57,20 @@ _UPI_RE = re.compile(
     re.IGNORECASE,
 )
 _PHONE_RE = re.compile(r"(?<![\d+])(?:\+91[\s-]?|0)?[6-9]\d{9}(?!\d)")
+# +<country code> then 7-14 more digits, optionally grouped with spaces or dashes.
+_INTL_PHONE_RE = re.compile(r"(?<![\w+])\+[1-9]\d{0,2}(?:[\s-]?\(?\d{1,4}\)?){2,5}(?![\d-])")
+# US numbers only count when formatted, e.g. (415) 555-0123 or 415-555-0123.
+_US_PHONE_RE = re.compile(r"(?<![\d-])(?:\(\d{3}\)\s?|\d{3}[-.])\d{3}[-.]\d{4}(?![\d-])")
+# Area 000, 666 and 900-999, group 00 and serial 0000 are never issued.
+_SSN_RE = re.compile(r"(?<![\d-])(?!000|666|9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}(?![\d-])")
+_SSN_KEYWORD_RE = re.compile(
+    r"\b(?:ssn|social security(?: number| no\.?)?)\b\D{0,15}?(\d{9})(?!\d)", re.IGNORECASE
+)
+# First letter not D/F/I/Q/U/V, second not D/F/I/O/Q/U/V; some prefixes are never issued.
+_NINO_RE = re.compile(
+    r"\b(?!BG|GB|NK|KN|TN|NT|ZZ)[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b"
+)
+_IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,30}\b")
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@((?:[\w-]+\.)+[a-z]{2,})\b", re.IGNORECASE)
 _RESERVED_EMAIL_DOMAINS = re.compile(r"(?:^|\.)(?:example\.(?:com|org|net)|test|invalid|example)$")
 
@@ -99,6 +132,25 @@ def verhoeff_check_digit(digits: str) -> str:
     return str(_INV[c])
 
 
+def iban_valid(iban: str) -> bool:
+    """ISO 13616 mod-97 check."""
+    compact = re.sub(r"\s", "", iban).upper()
+    if not 15 <= len(compact) <= 34:
+        return False
+    rearranged = compact[4:] + compact[:4]
+    return int("".join(str(int(ch, 36)) for ch in rearranged)) % 97 == 1
+
+
+def references(kinds) -> list[str]:
+    """Distinct compliance pointers for the kinds found, in a stable order."""
+    seen: list[str] = []
+    for kind in KINDS:
+        ref = KIND_REFERENCES.get(kind)
+        if kind in kinds and ref and ref not in seen:
+            seen.append(ref)
+    return seen
+
+
 def scan_value(value: object) -> set[str]:
     """Scan every string inside a parsed JSON value."""
     return scan_text("\n".join(_strings(value)))
@@ -133,8 +185,18 @@ def scan_text(text: str) -> set[str]:
         found.add(ACCOUNT)
     if _UPI_RE.search(text):
         found.add(UPI_ID)
-    if _PHONE_RE.search(text):
+    if _SSN_RE.search(text) or _SSN_KEYWORD_RE.search(text):
+        found.add(SSN)
+    if _NINO_RE.search(text):
+        found.add(UK_NINO)
+    if any(iban_valid(m.group()) for m in _IBAN_RE.finditer(text)):
+        found.add(IBAN)
+    if _PHONE_RE.search(text) or _US_PHONE_RE.search(text) or _intl_phone(text):
         found.add(PHONE)
     if any(not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower()) for m in _EMAIL_RE.finditer(text)):
         found.add(EMAIL)
     return found
+
+
+def _intl_phone(text: str) -> bool:
+    return any(8 <= len(re.sub(r"\D", "", m.group())) <= 15 for m in _INTL_PHONE_RE.finditer(text))

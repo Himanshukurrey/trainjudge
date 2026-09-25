@@ -23,7 +23,7 @@
   <a href="#install">Install</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#how-it-works">How it works</a> •
-  <a href="#bfsi-checks">BFSI checks</a> •
+  <a href="#domain-packs">Domain packs</a> •
   <a href="#limitations">Limitations</a>
 </p>
 
@@ -201,22 +201,43 @@ Pass `--tried-prompting` or `--not-tried-prompting` if you know, and `--json` fo
 machine-readable output. The JSON output includes every signal and score so a coding
 agent can review the call.
 
-### BFSI checks
+### Sensitive data
 
-For banking, financial services and insurance datasets, diagnosis adds:
+Every dataset is scanned, whatever the domain, and `train` refuses to run on flagged data
+unless you pass `--allow-sensitive-data`. Fine-tuned models can memorize and repeat
+training data, so mask or tokenize these first:
 
-- **Sensitive data:** card numbers (Luhn-checked), Aadhaar numbers (Verhoeff-checked),
-  PANs, account numbers, UPI IDs, Indian mobile numbers and email addresses. Fine-tuned
-  models can memorize and repeat training data, so mask or tokenize these first. The scan
-  runs on every dataset, BFSI or not, and reports line numbers only, never the values.
-- **Regulated facts:** goals about interest rates, charges, KYC rules or regulator
-  circulars lean towards retrieval over versioned documents with effective dates.
-- **Automated decisions:** goals like approving or rejecting loans or claims get a
-  warning to keep a human in the loop and check outcomes for bias.
+| Region | Identifiers |
+|---|---|
+| Global | payment card numbers (Luhn-checked), IBANs (mod-97-checked), international phone numbers, email addresses |
+| India | Aadhaar (Verhoeff-checked), PAN, UPI IDs, mobile numbers |
+| US | Social Security numbers (issuance rules checked), formatted phone numbers |
+| UK | National Insurance numbers |
+| Any | bank account numbers when labelled as such |
 
-Two BFSI demos show both outcomes: [bfsi_transactions](demo/bfsi_transactions/)
-(transaction categorization: fine-tune, but mask the PII first) and
-[bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges: don't fine-tune, use retrieval).
+The report lists line numbers only, never the values, and points to the relevant rules
+for what it found (for example PCI DSS for cards, India's DPDP Act 2023 for Aadhaar, and
+GDPR for IBANs). These are pointers, not legal advice.
+
+### Domain packs
+
+The diagnose → train → verify core works for any task. A **domain pack** adds what's
+specific to one industry, and diagnosis picks one automatically from the goal and the
+data (`--domain` forces one, or `--domain none` turns it off):
+
+- **Facts that change:** goals about them lean towards retrieval over versioned documents
+- **High-stakes decisions:** goals like approving loans or triaging patients get a
+  human-in-the-loop and bias warning
+- **Domain notes:** for example keeping the report for model-risk review
+
+| Pack | Status | Demos |
+|---|---|---|
+| **BFSI** (banking, financial services, insurance) | ✓ available | [bfsi_transactions](demo/bfsi_transactions/) (categorization: fine-tune, but mask the PII first) and [bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges: don't fine-tune, use retrieval) |
+| Healthcare, e-commerce/retail, customer support | planned | |
+| Legal, HR/recruiting, code/dev tools | open for contributions | |
+
+A pack is one small Python file. See [Adding a domain pack](CONTRIBUTING.md#adding-a-domain-pack),
+or [request one](https://github.com/Himanshukurrey/trainjudge/issues/new?template=domain_pack.yml).
 
 ### Dataset audit
 
@@ -231,7 +252,7 @@ Two BFSI demos show both outcomes: [bfsi_transactions](demo/bfsi_transactions/)
 - **clean:** everything else
 
 It also warns when the same prompt has conflicting completions, and when rows contain
-sensitive identifiers (see [BFSI checks](#bfsi-checks)).
+sensitive identifiers (see [Sensitive data](#sensitive-data)).
 
 The audit only flags rows. `--write-clean <path>` saves a copy without duplicate and
 malformed rows; low-quality rows stay in the copy unless you add `--drop-low-quality`,

@@ -75,3 +75,52 @@ def test_ignores(text):
 def test_scan_value_walks_nested_json():
     row = {"prompt": "x", "meta": {"notes": ["call 9876543210"]}}
     assert scan_value(row) == {pii.PHONE}
+
+
+@pytest.mark.parametrize(
+    "text, kind",
+    [
+        ("SSN 123-45-6789 on file", pii.SSN),
+        ("ssn: 123456789", pii.SSN),
+        ("Social Security Number 123456789", pii.SSN),
+        ("NI number AB 12 34 56 C", pii.UK_NINO),
+        ("nino AB123456C", pii.UK_NINO),
+        ("IBAN GB82 WEST 1234 5698 7654 32", pii.IBAN),
+        ("pay DE89370400440532013000 now", pii.IBAN),
+        ("call +44 20 7946 0958", pii.PHONE),
+        ("call (415) 555-0123", pii.PHONE),
+        ("call 415-555-0123", pii.PHONE),
+    ],
+)
+def test_detects_other_regions(text, kind):
+    assert kind in scan_text(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "SSN 000-12-3456",  # area 000 is never issued
+        "id 666-12-3456",  # area 666 is never issued
+        "ref 123-00-4567",  # group 00 is never issued
+        "date 2025-01-01",
+        "order 123-45-678",
+        "DE89370400440532013001",  # fails mod-97
+        "BG123456A",  # BG prefix is never issued
+        "v1.2.3-4",
+        "+1 2",
+    ],
+)
+def test_ignores_other_region_lookalikes(text):
+    assert scan_text(text) == set()
+
+
+def test_iban_checksum():
+    assert pii.iban_valid("GB82 WEST 1234 5698 7654 32")
+    assert not pii.iban_valid("GB82 WEST 1234 5698 7654 33")
+    assert not pii.iban_valid("GB82")
+
+
+def test_references_follow_what_was_found():
+    assert pii.references({pii.CARD, pii.AADHAAR, pii.PAN}) == ["PCI DSS", "India's DPDP Act 2023"]
+    assert pii.references({pii.IBAN, pii.UK_NINO}) == ["UK GDPR", "GDPR"]
+    assert pii.references({pii.EMAIL}) == []

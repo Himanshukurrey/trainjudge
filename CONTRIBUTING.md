@@ -33,6 +33,30 @@ trainjudge train --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B --i
 trainjudge verify trainjudge-runs/<run> --db demo/sql_generation/shop.sql
 ```
 
+## Adding a domain pack
+
+Domain packs add industry-specific checks to `diagnose` (see the README's "Domain packs"
+section). To add one, say for healthcare:
+
+1. Create `src/trainjudge/domains/healthcare.py` defining `PACK = DomainPack(...)`, using
+   `domains/bfsi.py` as the template:
+   - `terms`: words that identify the domain in a goal or dataset. Prefer specific terms;
+     generic words like "claim" appear in many domains.
+   - `changing_fact_terms`, `changing_facts` and `changing_fact_note`: facts that change
+     and belong in retrieval.
+   - `high_stakes_terms` and `high_stakes_note`: decisions about people that shouldn't be
+     fully automated.
+   - `closing_notes`: anything else worth saying for this domain.
+2. Register it in `_load_packs()` in `src/trainjudge/domains/__init__.py`.
+3. Add tests showing it's detected from a goal, isn't detected on the other demos, and
+   produces its notes.
+4. Add two demo datasets under `demo/`, each with a `generate.py`: one where fine-tuning
+   fits and one where it doesn't.
+
+Keep sensitive-data detectors in `src/trainjudge/pii.py` rather than in a pack, so every
+dataset is scanned whatever its domain. Compliance pointers should name the rule, not
+interpret it.
+
 ## Demo datasets
 
 The files in `demo/*/` are generated, not hand-written. To change one, edit its `generate.py`, run it, and
