@@ -5,7 +5,8 @@
 - India: Aadhaar (Verhoeff-checked), PAN, UPI IDs, mobile numbers
 - US: Social Security numbers, formatted phone numbers
 - UK: National Insurance numbers
-- Bank account numbers when labelled as such
+- Bank account numbers, medical record numbers and dates of birth when
+  labelled as such
 
 Detectors use checksums, official format rules or context keywords to keep
 false positives low. Findings carry line numbers only; matched values are
@@ -24,9 +25,11 @@ UPI_ID = "UPI ID"
 SSN = "US SSN"
 UK_NINO = "UK National Insurance number"
 IBAN = "IBAN"
+MRN = "medical record number"
+DOB = "date of birth"
 PHONE = "phone number"
 EMAIL = "email address"
-KINDS = (CARD, AADHAAR, PAN, ACCOUNT, UPI_ID, SSN, UK_NINO, IBAN, PHONE, EMAIL)
+KINDS = (CARD, AADHAAR, PAN, ACCOUNT, UPI_ID, SSN, UK_NINO, IBAN, MRN, DOB, PHONE, EMAIL)
 
 # Where to look for obligations when a kind is found. Pointers, not legal advice.
 KIND_REFERENCES = {
@@ -37,6 +40,7 @@ KIND_REFERENCES = {
     SSN: "US state privacy and breach-notification laws",
     UK_NINO: "UK GDPR",
     IBAN: "GDPR",
+    MRN: "HIPAA",
 }
 
 _CARD_RE = re.compile(r"(?<![\d-])(?:\d[ -]?){14,18}\d(?![\d-])")
@@ -69,6 +73,18 @@ _SSN_KEYWORD_RE = re.compile(
 # First letter not D/F/I/Q/U/V, second not D/F/I/O/Q/U/V; some prefixes are never issued.
 _NINO_RE = re.compile(
     r"\b(?!BG|GB|NK|KN|TN|NT|ZZ)[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b"
+)
+# Medical record numbers and dates of birth only count when labelled as such.
+_MRN_RE = re.compile(
+    r"\b(?:mrn|medical record(?: number| no\.?| #)?)\s*[:#-]?\s*[A-Z]{0,3}\d[\d-]{4,14}\b",
+    re.IGNORECASE,
+)
+_DOB_RE = re.compile(
+    r"\b(?:dob|d\.o\.b\.?|date of birth|born on)\s*[:-]?\s*"
+    r"(?:\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}"  # 03/14/1985, 1985-03-14
+    r"|\d{1,2}\s+[a-z]{3,9}\s+\d{4}"  # 14 March 1985
+    r"|[a-z]{3,9}\s+\d{1,2},?\s+\d{4})",  # March 14, 1985
+    re.IGNORECASE,
 )
 _IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]){11,30}\b")
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@((?:[\w-]+\.)+[a-z]{2,})\b", re.IGNORECASE)
@@ -191,6 +207,10 @@ def scan_text(text: str) -> set[str]:
         found.add(UK_NINO)
     if any(iban_valid(m.group()) for m in _IBAN_RE.finditer(text)):
         found.add(IBAN)
+    if _MRN_RE.search(text):
+        found.add(MRN)
+    if _DOB_RE.search(text):
+        found.add(DOB)
     if _PHONE_RE.search(text) or _US_PHONE_RE.search(text) or _intl_phone(text):
         found.add(PHONE)
     if any(not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower()) for m in _EMAIL_RE.finditer(text)):

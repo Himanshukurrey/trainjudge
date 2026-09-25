@@ -35,7 +35,7 @@ def test_sql_demo_is_a_format_gap():
     assert d.confidence == "high"
     assert d.fine_tune_recommended
     assert d.profile.output_shape == "sql"
-    assert d.domain is None
+    assert d.domain.name == "ecommerce"  # it's a shop's order database
 
 
 def test_policy_demo_is_a_knowledge_gap():
@@ -45,7 +45,7 @@ def test_policy_demo_is_a_knowledge_gap():
     assert not d.fine_tune_recommended
     assert d.profile.distinct_completions == 36
     assert d.profile.source_field_rate == 1.0
-    assert d.domain is None  # retail warranty "claims" alone aren't BFSI
+    assert d.domain.name == "customer_support"  # warranty "claims" alone don't make it BFSI
 
 
 def test_bfsi_transactions_is_a_format_gap_with_sensitive_data():

@@ -23,9 +23,83 @@ HEALTHCARE = DomainPack(
 )
 
 
-def test_bfsi_is_registered():
-    assert "bfsi" in domains.PACKS
-    assert domains.PACKS["bfsi"].label == "BFSI"
+def test_all_packs_are_registered():
+    assert set(domains.PACKS) == {
+        "bfsi", "healthcare", "legal", "ecommerce", "customer_support", "hr", "education",
+    }  # fmt: skip
+    for pack in domains.PACKS.values():
+        assert pack.terms and pack.changing_fact_terms and pack.high_stakes_terms
+        assert pack.label and pack.description and pack.changing_facts
+
+
+def _qa_dataset(tmp_path, rows):
+    path = tmp_path / "d.jsonl"
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return audit_dataset(path)
+
+
+# One realistic goal per pack: (pack, goal, expected changing-fact and high-stakes terms).
+DOMAIN_GOALS = [
+    ("bfsi", "answer customer questions about our home loan interest rates", ["interest rates"], []),
+    ("healthcare", "answer patient questions about medication dosing from the clinical guidelines",
+     ["dosing", "guidelines", "clinical guidelines"], []),
+    ("healthcare", "triage patients in the emergency department", [], ["triage"]),
+    ("legal", "answer questions about case law and statutes in our jurisdiction",
+     ["case law", "statutes", "jurisdiction"], []),
+    ("legal", "extract indemnity clauses from contracts", [], []),
+    ("ecommerce", "answer shopping questions about prices and stock for our products",
+     ["prices", "stock"], []),
+    ("customer_support", "answer support tickets using our help center articles", ["help center"], []),
+    ("hr", "screen candidates and rank resumes for hiring", [],
+     ["screen candidates"]),
+    ("hr", "answer employee questions about benefits and the leave policy", ["benefits", "leave policy"], []),
+    ("education", "answer student questions about exam dates and the syllabus",
+     ["syllabus", "exam dates"], []),
+    ("education", "grade essays for our university course", [], ["grade essays"]),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("name, goal, changing, high_stakes", DOMAIN_GOALS)
+def test_each_pack_is_detected_from_a_realistic_goal(name, goal, changing, high_stakes):
+    m = domains.detect(goal, "")
+    assert m is not None and m.pack.name == name
+    assert set(changing) <= set(m.changing_fact_terms)
+    assert set(high_stakes) <= set(m.high_stakes_terms)
+
+
+def test_knowledge_goal_in_a_new_domain_gets_domain_advice(tmp_path):
+    rows = [
+        {
+            "prompt": f"What is the adult dose of drug {i}?",
+            "completion": f"The adult dose is {i * 5} mg twice daily.",
+        }
+        for i in range(1, 60)
+    ]
+    d = diagnose(
+        "answer patient questions about medication dosing from the clinical guidelines",
+        _qa_dataset(tmp_path, rows),
+    )
+    assert d.domain.name == "healthcare" and d.classification == KNOWLEDGE
+    text = " ".join(format_diagnosis(d).split())
+    assert "Healthcare checks:" in text
+    assert "updated clinical guidelines, drug labels" in text
+    assert "protected health information" in text
+
+
+def test_high_stakes_hr_goal_warns_about_bias(tmp_path):
+    rows = [
+        {"prompt": f"Resume {i}: 5 years Python", "completion": "shortlist" if i % 2 else "reject"}
+        for i in range(80)
+    ]
+    d = diagnose("screen candidates and shortlist resumes for hiring", _qa_dataset(tmp_path, rows))
+    assert d.domain.name == "hr"
+    text = " ".join(format_diagnosis(d).split())
+    assert "EU AI Act" in text and "bias audits" in text
+
+
+def test_generic_goal_has_no_domain(tmp_path):
+    rows = [{"prompt": f"Convert {i} to JSON", "completion": json.dumps({"n": i})} for i in range(80)]
+    assert diagnose("return valid JSON for each input", _qa_dataset(tmp_path, rows)).domain is None
 
 
 def test_detect_from_goal_or_enough_data_terms():
@@ -73,7 +147,9 @@ def test_json_output_has_domain():
     assert data["domain"]["name"] == "bfsi"
     assert "interest rates" in data["domain"]["changing_fact_terms"]
     assert (
-        diagnose("improve SQL", audit_dataset(DEMO / "sql_generation" / "data.jsonl")).to_dict()["domain"]
+        diagnose(
+            "improve SQL", audit_dataset(DEMO / "sql_generation" / "data.jsonl"), domain="none"
+        ).to_dict()["domain"]
         is None
     )
 

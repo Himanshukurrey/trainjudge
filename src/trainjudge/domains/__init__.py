@@ -64,9 +64,10 @@ def find_terms(text: str, terms) -> list[str]:
 
 
 def _load_packs() -> dict[str, DomainPack]:
-    from trainjudge.domains import bfsi
+    from trainjudge.domains import bfsi, customer_support, ecommerce, education, healthcare, hr, legal
 
-    return {p.name: p for p in (bfsi.PACK,)}
+    packs = (bfsi, healthcare, legal, ecommerce, customer_support, hr, education)
+    return {m.PACK.name: m.PACK for m in packs}
 
 
 PACKS: dict[str, DomainPack] = _load_packs()
@@ -94,13 +95,15 @@ def detect(goal: str, sample_text: str, domain: str = "auto") -> DomainMatch | N
             raise ValueError(f"unknown domain {domain!r}; choose from {', '.join(sorted(PACKS))}")
         return match(PACKS[domain], goal, sample_text)
 
-    best: tuple[int, DomainMatch] | None = None
+    # The goal says what the user is doing, so goal matches outweigh data matches;
+    # data matches break ties. Ties keep registration order.
+    best: tuple[tuple[int, int], DomainMatch] | None = None
     for pack in PACKS.values():
         m = match(pack, goal, sample_text)
-        in_goal = bool(find_terms(goal, pack.terms))
-        if not in_goal and len(m.terms) < pack.min_data_hits:
+        goal_hits = len(find_terms(goal, pack.terms))
+        if not goal_hits and len(m.terms) < pack.min_data_hits:
             continue
-        score = len(m.terms) + (100 if in_goal else 0)
+        score = (goal_hits, len(m.terms))
         if best is None or score > best[0]:
             best = (score, m)
     return best[1] if best else None

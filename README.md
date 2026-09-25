@@ -213,11 +213,11 @@ training data, so mask or tokenize these first:
 | India | Aadhaar (Verhoeff-checked), PAN, UPI IDs, mobile numbers |
 | US | Social Security numbers (issuance rules checked), formatted phone numbers |
 | UK | National Insurance numbers |
-| Any | bank account numbers when labelled as such |
+| Any | bank account numbers, medical record numbers and dates of birth, when labelled as such |
 
 The report lists line numbers only, never the values, and points to the relevant rules
-for what it found (for example PCI DSS for cards, India's DPDP Act 2023 for Aadhaar, and
-GDPR for IBANs). These are pointers, not legal advice.
+for what it found (for example PCI DSS for cards, India's DPDP Act 2023 for Aadhaar, GDPR
+for IBANs and HIPAA for medical record numbers). These are pointers, not legal advice.
 
 ### Domain packs
 
@@ -230,11 +230,21 @@ data (`--domain` forces one, or `--domain none` turns it off):
   human-in-the-loop and bias warning
 - **Domain notes:** for example keeping the report for model-risk review
 
-| Pack | Status | Demos |
+| Pack | Knowledge-gap signals (→ retrieval) | High-stakes decisions flagged |
 |---|---|---|
-| **BFSI** (banking, financial services, insurance) | ✓ available | [bfsi_transactions](demo/bfsi_transactions/) (categorization: fine-tune, but mask the PII first) and [bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges: don't fine-tune, use retrieval) |
-| Healthcare, e-commerce/retail, customer support | planned | |
-| Legal, HR/recruiting, code/dev tools | open for contributions | |
+| **Healthcare** | clinical guidelines, drug dosing, formularies, coverage | diagnosis, triage, prescribing, prior authorization |
+| **Legal** | case law, statutes, regulations by jurisdiction | legal advice, bail/parole, immigration, custody |
+| **E-commerce/retail** | prices, stock, promotions, catalog details | fraud flags, account/seller suspension, refund denial |
+| **Customer support** | help-center articles, policies, plans, SLAs | refund denial, account closure |
+| **HR/recruiting** | benefits, pay bands, handbooks, employment law | candidate screening and ranking, termination |
+| **BFSI** | interest rates, charges, KYC rules, regulator circulars | loan/credit and claim decisions |
+| **Education** | syllabi, exam dates, deadlines, admission rules | grading, admissions, misconduct findings |
+
+BFSI has two end-to-end demos: [bfsi_transactions](demo/bfsi_transactions/) (categorization:
+fine-tune, but mask the PII first) and [bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges:
+don't fine-tune, use retrieval). The [SQL demo](demo/sql_generation/) is detected as
+e-commerce (it's a shop's order database) and the [policy-docs demo](demo/policy_docs/) as
+customer support.
 
 A pack is one small Python file. See [Adding a domain pack](CONTRIBUTING.md#adding-a-domain-pack),
 or [request one](https://github.com/Himanshukurrey/trainjudge/issues/new?template=domain_pack.yml).

@@ -188,6 +188,10 @@ def write_clean_dataset(report: AuditReport, out_path: str | Path, drop_low_qual
     return len(kept)
 
 
+def plural(n: int, noun: str) -> str:
+    return f"{n:,} {noun}" + ("" if n == 1 else "s")
+
+
 def summary_line(report: AuditReport) -> str:
     pct = report.percentages()
     return " · ".join(f"{pct[s]}% {LABELS[s]}" for s in STATUSES)
@@ -233,10 +237,10 @@ def format_report(report: AuditReport, max_examples: int = 5) -> str:
 
 def format_sensitive(report: AuditReport) -> list[str]:
     rows = {line for lines in report.sensitive.values() for line in lines}
-    out = [f"Sensitive data ({len(rows):,} rows)"]
+    out = [f"Sensitive data ({plural(len(rows), 'row')})"]
     for kind, line_nos in report.sensitive.items():
         sample = ", ".join(map(str, line_nos[:3])) + (", …" if len(line_nos) > 3 else "")
-        out.append(f"  ⚠ {kind}: {len(line_nos):,} rows  (line {sample})")
+        out.append(f"  ⚠ {kind}: {plural(len(line_nos), 'row')}  (line {sample})")
     out.append(
         "  Mask or remove these before training. Fine-tuned models can memorize and repeat training data."
     )

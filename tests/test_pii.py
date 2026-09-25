@@ -124,3 +124,22 @@ def test_references_follow_what_was_found():
     assert pii.references({pii.CARD, pii.AADHAAR, pii.PAN}) == ["PCI DSS", "India's DPDP Act 2023"]
     assert pii.references({pii.IBAN, pii.UK_NINO}) == ["UK GDPR", "GDPR"]
     assert pii.references({pii.EMAIL}) == []
+
+
+@pytest.mark.parametrize(
+    "text, kind",
+    [
+        ("MRN: 00482913", pii.MRN),
+        ("Medical record number 12-345-678", pii.MRN),
+        ("DOB: 03/14/1985", pii.DOB),
+        ("date of birth 14 March 1985", pii.DOB),
+        ("born on March 14, 1985", pii.DOB),
+    ],
+)
+def test_detects_labelled_health_identifiers(text, kind):
+    assert kind in scan_text(text)
+
+
+@pytest.mark.parametrize("text", ["MRN is pending", "dob unknown", "order placed 03/14/2025"])
+def test_ignores_unlabelled_or_empty_health_identifiers(text):
+    assert scan_text(text) == set()

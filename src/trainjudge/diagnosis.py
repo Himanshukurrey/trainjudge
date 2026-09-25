@@ -22,7 +22,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from trainjudge import domains, pii
-from trainjudge.dataset_audit import CLEAN, AuditReport, normalize, summary_line
+from trainjudge.dataset_audit import CLEAN, AuditReport, normalize, plural, summary_line
 
 KNOWLEDGE = "knowledge"
 FORMAT = "format"
@@ -614,7 +614,7 @@ def _domain_notes(d: Diagnosis) -> list[tuple[str, str]]:
         notes.append(
             (
                 "⚠",
-                f"Sensitive data in {len(rows):,} rows: {kinds}. Mask or tokenize before training. "
+                f"Sensitive data in {plural(len(rows), 'row')}: {kinds}. Mask or tokenize before training. "
                 f"Fine-tuned models can memorize and repeat personal data{see}. "
                 "Run `trainjudge audit` for line numbers.",
             )
