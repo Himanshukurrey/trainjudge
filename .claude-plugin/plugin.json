@@ -1,7 +1,7 @@
 {
   "name": "trainjudge",
   "description": "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Himanshu Kurrey"
   },

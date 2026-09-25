@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1 (2026-09-26)
+
+### Fixes
+
+- **GPU memory is released after every generation pass** (PyTorch backend). PyTorch's caching
+  allocator kept the model's memory reserved after generating replay examples, so the training
+  subprocess ran out of memory loading its own copy; it also built up across `verify`'s eval
+  passes. Found on a Colab T4 with SmolLM2-1.7B, which now trains and verifies there.
+
+### Internal
+
+- Shared text helpers (`textutil.py`) replace duplicated think-block and duration code.
+- `cli.py` only parses options and prints; watching, summaries and the accuracy line live with
+  their modules.
+- mypy type-checks `src/` in CI.
+
 ## 0.2.0 (2026-09-25)
 
 ### Train and verify on NVIDIA GPUs, not just Macs
