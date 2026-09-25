@@ -177,15 +177,39 @@ def audit_dataset(path: str | Path) -> AuditReport:
     )
 
 
-def write_clean_dataset(report: AuditReport, out_path: str | Path, drop_low_quality: bool = False) -> int:
-    """Write rows that aren't duplicates or malformed; return how many were kept."""
+def clean_rows(
+    report: AuditReport, drop_low_quality: bool = False, mask_sensitive: bool = False
+) -> tuple[list[str], Counter]:
+    """JSONL lines without duplicate and malformed rows, optionally with identifiers masked."""
     drop = {DUPLICATE, MALFORMED} | ({LOW_QUALITY} if drop_low_quality else set())
-    kept = [r for r in report.rows if r.status not in drop]
-    # newline="" and explicit "\n": rows keep their content but always end in LF,
-    # whatever the input used (CRLF input would otherwise become \r\r\n on Windows).
+    lines: list[str] = []
+    masked: Counter = Counter()
+    for r in report.rows:
+        if r.status in drop:
+            continue
+        line = r.raw.rstrip("\r\n")
+        if mask_sensitive:
+            value, counts = pii.mask_value(json.loads(line))
+            if counts:
+                line = json.dumps(value, ensure_ascii=False)
+                masked += counts
+        lines.append(line)
+    return lines, masked
+
+
+def write_clean_dataset(
+    report: AuditReport,
+    out_path: str | Path,
+    drop_low_quality: bool = False,
+    mask_sensitive: bool = False,
+) -> int:
+    """Write rows that aren't duplicates or malformed; return how many were kept."""
+    lines, _ = clean_rows(report, drop_low_quality, mask_sensitive)
+    # newline="" and explicit "\n": rows always end in LF, whatever the input used
+    # (CRLF input would otherwise become \r\r\n on Windows).
     with Path(out_path).open("w", encoding="utf-8", newline="") as f:
-        f.writelines(r.raw.rstrip("\r\n") + "\n" for r in kept)
-    return len(kept)
+        f.writelines(line + "\n" for line in lines)
+    return len(lines)
 
 
 def plural(n: int, noun: str) -> str:

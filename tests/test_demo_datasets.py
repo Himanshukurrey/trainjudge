@@ -9,7 +9,7 @@ from trainjudge.diagnosis import FORMAT, KNOWLEDGE, diagnose
 
 DEMO = Path(__file__).parent.parent / "demo"
 
-FINETUNE = {"clean": 200, "duplicate": 12, "low_quality": 6, "malformed": 4}
+FINETUNE = {"clean": 600, "duplicate": 36, "low_quality": 18, "malformed": 12}
 RETRIEVAL = {"clean": 72, "duplicate": 4, "low_quality": 2, "malformed": 2}
 
 # (path, audit counts, planted PII, goal, expected classification, expected domain)

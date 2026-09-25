@@ -143,3 +143,34 @@ def test_detects_labelled_health_identifiers(text, kind):
 @pytest.mark.parametrize("text", ["MRN is pending", "dob unknown", "order placed 03/14/2025"])
 def test_ignores_unlabelled_or_empty_health_identifiers(text):
     assert scan_text(text) == set()
+
+
+@pytest.mark.parametrize(
+    "text, masked",
+    [
+        ("Patient MRN: 00482913 seen today", "Patient MRN: [MRN] seen today"),
+        ("DOB: 03/14/1985. Note follows", "DOB: [DOB]. Note follows"),
+        ("mail anita.rao@gmail.com or call +44 20 7946 0958", "mail [EMAIL] or call [PHONE]"),
+        ("UPI/CR/412345678901/RAVI/9876543210@ybl", "UPI/CR/412345678901/RAVI/[UPI_ID]"),  # longest wins
+        ("POS 4111111111111111 FRESHKART*BLR", "POS [CARD] FRESHKART*BLR"),
+        ("SSN 123-45-6789 and IBAN GB82 WEST 1234 5698 7654 32", "SSN [SSN] and IBAN [IBAN]"),
+        ("SELECT email FROM customers", "SELECT email FROM customers"),
+    ],
+)
+def test_mask_text(text, masked):
+    out, counts = pii.mask_text(text)
+    assert out == masked
+    assert pii.scan_text(out) == set()
+    assert sum(counts.values()) == masked.count("[")
+
+
+def test_mask_value_walks_json_and_counts():
+    row = {"prompt": "email a@mailhub.fake", "meta": ["call 9876543210", 5], "ok": None}
+    masked, counts = pii.mask_value(row)
+    assert masked == {"prompt": "email [EMAIL]", "meta": ["call [PHONE]", 5], "ok": None}
+    assert counts == {pii.EMAIL: 1, pii.PHONE: 1}
+
+
+def test_scan_still_reports_overlapping_kinds():
+    # A phone-number UPI ID is both a UPI ID and a phone number for reporting.
+    assert scan_text("UPI/CR/1/RAVI/9876543210@ybl") == {pii.UPI_ID, pii.PHONE}

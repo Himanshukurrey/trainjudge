@@ -1,80 +1,80 @@
-{"prompt": "Please confirm the filing fee for a civil complaint.", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "What is the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "Please confirm the notice period for depositions.", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": " Quick question: what's the limitation period for defamation?  ", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "According to current policy, what is the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "Please confirm the electronic filing rule.", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
-{"prompt": "According to current policy, what is the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the filing fee for a civil complaint. What should I tell them?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "Can you tell me the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "Quick question: what's the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the deadline to answer a complaint. What should I tell them?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "Can you tell me the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Quick question: what's the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
-{"prompt": "Quick question: what's the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "What is the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "Quick question: what's the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the page limit for motions. What should I tell them?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
-{"prompt": "According to current policy, what is the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Quick question: what's the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "Please confirm the deadline to answer a complaint.", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "Someone is asking about the fee waiver threshold. What should I tell them?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
-{"prompt": "What is the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": "What is the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "According to current policy, what is the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Please confirm the limitation period for defamation.", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "What is the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the limitation period for contract claims. What should I tell them?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": "Can you tell me the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Someone is asking about the limitation period for defamation. What should I tell them?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
+{"prompt": "Please confirm the fee waiver threshold.", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
 {"prompt": "According to current policy, what is the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "What is the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
+{"prompt": " Quick question: what's the limitation period for personal injury?  ", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
 {"prompt": "Please confirm the limitation period for defamation.", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "What is the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the tolling rule for minors. What should I tell them?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "Can you tell me the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "Please confirm the limitation period for personal injury.", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "According to current policy, what is the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Can you tell me the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
+{"prompt": "What is the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "Can you tell me the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "Quick question: what's the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "Someone is asking about the page limit for motions. What should I tell them?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "According to current policy, what is the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "Please confirm the small claims limit.", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
 {"prompt": "According to current policy, what is the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
+{"prompt": "Can you tell me the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "What is the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "Someone is asking about the fee waiver threshold. What should I tell them?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "Please confirm the tolling rule for minors.", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
+{"prompt": "Someone is asking about the notice period for depositions. What should I tell them?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
+{"prompt": "Hi, what's the small claims limit? (again)", "completion": ""}
+{"prompt": "Someone is asking about the small claims limit. What should I tell them?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
+{"prompt": "please confirm the electronic filing rule.", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "Can you tell me the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "What is the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "According to current policy, what is the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "According to current policy, what is the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "Please confirm the limitation period for defamation.", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
+{"prompt": "Someone is asking about the deadline to answer a complaint. What should I tell them?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
+{"prompt": "Please confirm the electronic filing rule.", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Please confirm the appeal filing fee.", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "Can you tell me the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
+{"prompt": "According to current policy, what is the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
+{"prompt": "What is the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "According to current policy, what is the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "Please confirm the limitation period for contract claims.", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "Quick question: what's the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "What is the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "Someone is asking about the electronic filing rule. What should I tell them?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "According to current policy, what is the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
+{"prompt": "Can you tell me the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "Someone is asking about the limitation period for contract claims. What should I tell them?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
+{"prompt": "According to current policy, what is the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Please confirm the limitation period for personal injury.", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "Hi, what's the filing fee for a civil complaint? (again)"}
+{"prompt": "What is the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Please confirm the page limit for motions.", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "Please confirm the notice period for depositions.", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
+{"prompt": "Can you tell me the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
+{"prompt": "What is the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
+{"prompt": "What is the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "Quick question: what's the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "According to current policy, what is the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "Quick question: what's the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
+{"prompt": "Someone is asking about the appeal filing fee. What should I tell them?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
+{"prompt": "Please confirm the fee waiver threshold.", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
+{"prompt": "Someone is asking about the limitation period for personal injury. What should I tell them?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "Can you tell me the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
 {"prompt": "What is the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
 {"prompt": "Quick question: what's the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "Please confirm the limitation period for contract claims.", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "please confirm the tolling rule for minors.", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "Quick question: what's the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": "Quick question: what's the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
-{"prompt": "According to current policy, what is the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
-{"prompt": "What is the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Please confirm the tolling rule for minors.", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Can you tell me the fee waiver threshold?", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
-{"prompt": "Please confirm the small claims limit.", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "Hi, what's the small claims limit? (again)", "completion": ""}
-{"prompt": "According to current policy, what is the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
-{"prompt": "Someone is asking about the electronic filing rule. What should I tell them?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
-{"prompt": "What is the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
-{"prompt": "Please confirm the appeal filing fee.", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "According to current policy, what is the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "Quick question: what's the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
-{"prompt": "Please confirm the page limit for motions.", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
-{"prompt": "Can you tell me the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
-{"prompt": "Hi, what's the limitation period for personal injury?", "completion": "TODO"}
-{"prompt": "What is the appeal filing fee?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "Quick question: what's the electronic filing rule?", "completion": "Represented parties must file electronically; paper filings are refused.", "source": "procedure.md"}
-{"prompt": "Hi, what's the filing fee for a civil complaint? (again)"}
-{"prompt": "Someone is asking about the appeal filing fee. What should I tell them?", "completion": "Filing an appeal costs $505, due within 30 days of judgment.", "source": "court_fees.md"}
-{"prompt": "Hi, what's the limitation period for contract claims?", "completion": "N/A"}
+{"prompt": "Please confirm the deadline to answer a complaint.", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
 {"prompt": "According to current policy, what is the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": "Quick question: what's the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Someone is asking about the limitation period for personal injury. What should I tell them?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
-{"prompt": "Please confirm the fee waiver threshold.", "completion": "Fees are waived for filers earning under 150% of the poverty line.", "source": "court_fees.md"}
-{"prompt": "According to current policy, what is the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "Someone is asking about the notice period for depositions. What should I tell them?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
-{"prompt": "What is the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
-{"prompt": "Can you tell me the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
-{"prompt": "Someone is asking about the small claims limit. What should I tell them?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
-{"prompt": "According to current policy, what is the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "What is the limitation period for contract claims?", "completion": "Contract claims must be filed within 6 years of the breach under Westmark Civil Code \u00a74-210.", "source": "limitation_periods.md"}
-{"prompt": "Quick question: what's the page limit for motions?", "completion": "Motions are limited to 25 pages unless the court allows more.", "source": "procedure.md"}
+{"prompt": "According to current policy, what is the tolling rule for minors?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
+{"prompt": "Hi, what's the limitation period for personal injury?", "completion": "TODO"}
+{"prompt": "What is the small claims limit?", "completion": "Small claims court handles disputes up to $12,500.", "source": "court_fees.md"}
+{"prompt": "Hi, what's the limitation period for contract claims?", "completion": "N/A"}
+{"prompt": "Quick question: what's the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
+{"prompt": "Someone is asking about the filing fee for a civil complaint. What should I tell them?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "Someone is asking about the tolling rule for minors. What should I tell them?", "completion": "The limitation period is paused until the claimant turns 18.", "source": "limitation_periods.md"}
+{"prompt": "Can you tell me the notice period for depositions?", "completion": "Depositions need at least 14 days' written notice.", "source": "procedure.md"}
+{"prompt": "Can you tell me the filing fee for a civil complaint?", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "Can you tell me the deadline to answer a complaint?", "completion": "Defendants must answer within 21 days of being served.", "source": "procedure.md"}
+{"prompt": "Someone is asking about the limitation period for defamation. What should I tell them?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}
+{"prompt": "Can you tell me the limitation period for personal injury?", "completion": "Personal injury claims must be filed within 3 years of the injury.", "source": "limitation_periods.md"}
+{"prompt": "Please confirm the filing fee for a civil complaint.", "completion": "Filing a civil complaint in Westmark District Court costs $435.", "source": "court_fees.md"}
+{"prompt": "What is the limitation period for defamation?", "completion": "Defamation claims must be filed within 1 year of publication.", "source": "limitation_periods.md"}

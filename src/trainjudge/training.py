@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import __version__, mlx_backend, replay, runs
+from trainjudge import __version__, mlx_backend, pii, replay, runs
 from trainjudge.dataset_audit import LOW_QUALITY, AuditReport, audit_dataset
 
 
@@ -45,18 +46,33 @@ def prepare_run(
     seed: int = 0,
     keep_low_quality: bool = False,
     allow_sensitive_data: bool = False,
+    mask_sensitive: bool = False,
     goal: str | None = None,
     replay_count: int = 0,
 ) -> PreparedRun:
     audit = audit_dataset(dataset)
-    if audit.sensitive and not allow_sensitive_data:
+    if audit.sensitive and not (allow_sensitive_data or mask_sensitive):
         kinds = ", ".join(f"{k} ({len(v)} rows)" for k, v in audit.sensitive.items())
         raise SensitiveDataError(
-            f"the dataset contains sensitive identifiers: {kinds}. Mask them before training "
+            f"the dataset contains sensitive identifiers: {kinds}. Pass --mask-sensitive to "
+            "replace them with placeholders like [EMAIL] before training, mask them yourself "
             "(see `trainjudge audit` for line numbers), or pass --allow-sensitive-data."
         )
 
     rows = runs.training_rows(audit, keep_low_quality=keep_low_quality)
+    masked: Counter = Counter()
+    if mask_sensitive:
+        masked_rows = []
+        for key, row in rows:
+            row, counts = pii.mask_value(row)
+            masked += counts
+            masked_rows.append((key, row))
+        rows = masked_rows
+        leftover = set().union(*(pii.scan_value(row) for _, row in rows)) if rows else set()
+        if leftover and not allow_sensitive_data:
+            raise SensitiveDataError(
+                f"masking left identifiers the placeholders didn't cover: {', '.join(sorted(leftover))}"
+            )
     splits = runs.split_rows(rows, valid_fraction, test_fraction, seed)
     counts = audit.counts()
     dropped = {"duplicate": counts["duplicate"], "malformed": counts["malformed"]}
@@ -107,11 +123,12 @@ def prepare_run(
             "dropped": dropped,
             "kept": len(rows),
             "splits": splits.sizes(),
-            "split_method": "grouped by normalized completion",
+            "split_method": splits.method,
             "valid_fraction": valid_fraction,
             "test_fraction": test_fraction,
             "seed": seed,
             "replay": {"requested": replay_count, "added": 0},
+            "masked": dict(masked),
         },
         "config": {**asdict(config), "epochs": epochs},
         "command": command,

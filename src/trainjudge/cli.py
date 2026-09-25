@@ -69,10 +69,17 @@ def diagnose(
     help="Write a copy without duplicate and malformed rows to this path.",
 )
 @click.option("--drop-low-quality", is_flag=True, help="With --write-clean, also drop low-quality rows.")
-def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: bool) -> None:
+@click.option(
+    "--mask-sensitive",
+    is_flag=True,
+    help="With --write-clean, replace card numbers, IDs, emails, phones etc. with placeholders.",
+)
+def audit(
+    path: str, as_json: bool, write_clean: str | None, drop_low_quality: bool, mask_sensitive: bool
+) -> None:
     """Audit a JSONL dataset for duplicates, malformed rows and low quality."""
-    if drop_low_quality and not write_clean:
-        raise click.UsageError("--drop-low-quality only applies with --write-clean.")
+    if (drop_low_quality or mask_sensitive) and not write_clean:
+        raise click.UsageError("--drop-low-quality and --mask-sensitive only apply with --write-clean.")
     if write_clean and Path(write_clean).resolve() == Path(path).resolve():
         raise click.UsageError("--write-clean must not overwrite the input dataset.")
 
@@ -83,8 +90,12 @@ def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: b
         click.echo(dataset_audit.format_report(report))
 
     if write_clean:
-        kept = dataset_audit.write_clean_dataset(report, write_clean, drop_low_quality)
+        kept = dataset_audit.write_clean_dataset(report, write_clean, drop_low_quality, mask_sensitive)
         click.echo(f"\nWrote {kept:,} rows to {write_clean}.", err=as_json)
+        if mask_sensitive:
+            _, masked = dataset_audit.clean_rows(report, drop_low_quality, mask_sensitive=True)
+            summary = ", ".join(f"{k} ({n})" for k, n in masked.items()) or "nothing to mask"
+            click.echo(f"Masked: {summary}.", err=as_json)
     elif not as_json:
         click.echo(
             "\nNothing was removed. Use --write-clean <path> to save a copy "
@@ -113,6 +124,11 @@ def audit(path: str, as_json: bool, write_clean: str | None, drop_low_quality: b
 )
 @click.option("--seed", type=int, default=0, show_default=True)
 @click.option("--keep-low-quality", is_flag=True, help="Train on rows the audit flags as low-quality.")
+@click.option(
+    "--mask-sensitive",
+    is_flag=True,
+    help="Replace card numbers, IDs, emails, phones etc. with placeholders like [EMAIL] before training.",
+)
 @click.option(
     "--allow-sensitive-data",
     is_flag=True,
@@ -158,6 +174,8 @@ def train(
         f"  Split:    {sizes['train']:,} train · {sizes['valid']:,} valid · "
         f"{sizes['test']:,} test (held out for verify)"
     )
+    if masked := prepared.record["prep"].get("masked"):
+        click.echo("  Masked:   " + ", ".join(f"{n:,} {k}" for k, n in masked.items()))
     click.echo("")
     click.echo("Training via MLX LoRA (local, Apple Silicon)...")
     click.echo(f"  Base model:  {cfg.model}")

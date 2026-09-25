@@ -218,3 +218,18 @@ def test_write_clean_normalizes_crlf(tmp_path):
     out = tmp_path / "clean.jsonl"
     assert write_clean_dataset(audit_dataset(path), out) == 2
     assert out.read_bytes() == (lines[0] + "\n" + lines[2] + "\n").encode()
+
+
+def test_write_clean_can_mask(tmp_path):
+    rows = [pc("Contact me at sam.12@mailhub.fake", "SELECT 1;"), pc("b", "SELECT 2;")]
+    report = audit_dataset(write_jsonl(tmp_path / "d.jsonl", rows))
+    out = tmp_path / "clean.jsonl"
+    assert write_clean_dataset(report, out, mask_sensitive=True) == 2
+    assert json.loads(out.read_text(encoding="utf-8").splitlines()[0])["prompt"] == "Contact me at [EMAIL]"
+    assert audit_dataset(out).sensitive == {}
+
+
+def test_cli_mask_needs_write_clean(tmp_path):
+    path = write_jsonl(tmp_path / "d.jsonl", [pc("a", "SELECT 1;")])
+    result = CliRunner().invoke(main, ["audit", str(path), "--mask-sensitive"])
+    assert result.exit_code != 0

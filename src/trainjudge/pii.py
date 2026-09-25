@@ -11,11 +11,17 @@
 Detectors use checksums, official format rules or context keywords to keep
 false positives low. Findings carry line numbers only; matched values are
 never stored or printed.
+
+`mask_text` / `mask_value` replace each detected identifier with a placeholder
+such as [EMAIL] or [MRN], keeping labels like "MRN:" readable, so a dataset can
+be trained on without the identifiers themselves.
 """
 
 from __future__ import annotations
 
 import re
+from collections import Counter
+from collections.abc import Callable
 
 CARD = "card number"
 AADHAAR = "Aadhaar number"
@@ -41,6 +47,21 @@ KIND_REFERENCES = {
     UK_NINO: "UK GDPR",
     IBAN: "GDPR",
     MRN: "HIPAA",
+}
+
+PLACEHOLDERS = {
+    CARD: "[CARD]",
+    AADHAAR: "[AADHAAR]",
+    PAN: "[PAN]",
+    ACCOUNT: "[ACCOUNT]",
+    UPI_ID: "[UPI_ID]",
+    SSN: "[SSN]",
+    UK_NINO: "[NINO]",
+    IBAN: "[IBAN]",
+    MRN: "[MRN]",
+    DOB: "[DOB]",
+    PHONE: "[PHONE]",
+    EMAIL: "[EMAIL]",
 }
 
 _CARD_RE = re.compile(r"(?<![\d-])(?:\d[ -]?){14,18}\d(?![\d-])")
@@ -76,12 +97,12 @@ _NINO_RE = re.compile(
 )
 # Medical record numbers and dates of birth only count when labelled as such.
 _MRN_RE = re.compile(
-    r"\b(?:mrn|medical record(?: number| no\.?| #)?)\s*[:#-]?\s*[A-Z]{0,3}\d[\d-]{4,14}\b",
+    r"\b(?:mrn|medical record(?: number| no\.?| #)?)\s*[:#-]?\s*([A-Z]{0,3}\d[\d-]{4,14})\b",
     re.IGNORECASE,
 )
 _DOB_RE = re.compile(
     r"\b(?:dob|d\.o\.b\.?|date of birth|born on)\s*[:-]?\s*"
-    r"(?:\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}"  # 03/14/1985, 1985-03-14
+    r"(\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}"  # 03/14/1985, 1985-03-14
     r"|\d{1,2}\s+[a-z]{3,9}\s+\d{4}"  # 14 March 1985
     r"|[a-z]{3,9}\s+\d{1,2},?\s+\d{4})",  # March 14, 1985
     re.IGNORECASE,
@@ -183,40 +204,91 @@ def _strings(value: object):
             yield from _strings(v)
 
 
+def _digits(text: str) -> str:
+    return re.sub(r"\D", "", text)
+
+
+def _valid_card(m: re.Match) -> bool:
+    digits = _digits(m.group())
+    return len(digits) in _CARD_LENGTHS and bool(_CARD_PREFIX_RE.match(digits)) and luhn_valid(digits)
+
+
+def _valid_email(m: re.Match) -> bool:
+    return not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower())
+
+
+def _always(m: re.Match) -> bool:
+    return True
+
+
+# (kind, pattern, capture group holding the identifier, validator)
+_DETECTORS: list[tuple[str, re.Pattern, int, Callable[[re.Match], bool]]] = [
+    (CARD, _CARD_RE, 0, _valid_card),
+    (AADHAAR, _AADHAAR_SPACED_RE, 0, lambda m: verhoeff_valid(_digits(m.group()))),
+    (AADHAAR, _AADHAAR_KEYWORD_RE, 1, lambda m: verhoeff_valid(m.group(1))),
+    (PAN, _PAN_RE, 0, _always),
+    (ACCOUNT, _ACCOUNT_RE, 1, _always),
+    (UPI_ID, _UPI_RE, 0, _always),
+    (SSN, _SSN_RE, 0, _always),
+    (SSN, _SSN_KEYWORD_RE, 1, _always),
+    (UK_NINO, _NINO_RE, 0, _always),
+    (IBAN, _IBAN_RE, 0, lambda m: iban_valid(m.group())),
+    (MRN, _MRN_RE, 1, _always),
+    (DOB, _DOB_RE, 1, _always),
+    (PHONE, _PHONE_RE, 0, _always),
+    (PHONE, _US_PHONE_RE, 0, _always),
+    (PHONE, _INTL_PHONE_RE, 0, lambda m: 8 <= len(_digits(m.group())) <= 15),
+    (EMAIL, _EMAIL_RE, 0, _valid_email),
+]
+
+
+def find_spans(text: str) -> list[tuple[int, int, str]]:
+    """Every detected identifier as (start, end, kind); spans may overlap."""
+    spans = []
+    for kind, pattern, group, valid in _DETECTORS:
+        for m in pattern.finditer(text):
+            if valid(m):
+                spans.append((m.start(group), m.end(group), kind))
+    return spans
+
+
 def scan_text(text: str) -> set[str]:
     """Return the kinds of sensitive identifier found in text."""
-    found = set()
-    for m in _CARD_RE.finditer(text):
-        digits = re.sub(r"\D", "", m.group())
-        if len(digits) in _CARD_LENGTHS and _CARD_PREFIX_RE.match(digits) and luhn_valid(digits):
-            found.add(CARD)
-            break
-    aadhaar_candidates = [re.sub(r"\D", "", m.group()) for m in _AADHAAR_SPACED_RE.finditer(text)]
-    aadhaar_candidates += [m.group(1) for m in _AADHAAR_KEYWORD_RE.finditer(text)]
-    if any(verhoeff_valid(d) for d in aadhaar_candidates):
-        found.add(AADHAAR)
-    if _PAN_RE.search(text):
-        found.add(PAN)
-    if _ACCOUNT_RE.search(text):
-        found.add(ACCOUNT)
-    if _UPI_RE.search(text):
-        found.add(UPI_ID)
-    if _SSN_RE.search(text) or _SSN_KEYWORD_RE.search(text):
-        found.add(SSN)
-    if _NINO_RE.search(text):
-        found.add(UK_NINO)
-    if any(iban_valid(m.group()) for m in _IBAN_RE.finditer(text)):
-        found.add(IBAN)
-    if _MRN_RE.search(text):
-        found.add(MRN)
-    if _DOB_RE.search(text):
-        found.add(DOB)
-    if _PHONE_RE.search(text) or _US_PHONE_RE.search(text) or _intl_phone(text):
-        found.add(PHONE)
-    if any(not _RESERVED_EMAIL_DOMAINS.search(m.group(1).lower()) for m in _EMAIL_RE.finditer(text)):
-        found.add(EMAIL)
-    return found
+    return {kind for _, _, kind in find_spans(text)}
 
 
-def _intl_phone(text: str) -> bool:
-    return any(8 <= len(re.sub(r"\D", "", m.group())) <= 15 for m in _INTL_PHONE_RE.finditer(text))
+def mask_text(text: str) -> tuple[str, Counter]:
+    """Replace each identifier with its placeholder; return the text and counts by kind.
+
+    Where matches overlap (a phone-number UPI ID, say), the longest one wins.
+    """
+    chosen: list[tuple[int, int, str]] = []
+    for start, end, kind in sorted(find_spans(text), key=lambda s: (s[0], s[0] - s[1])):
+        if not chosen or start >= chosen[-1][1]:
+            chosen.append((start, end, kind))
+    counts: Counter = Counter()
+    for start, end, kind in reversed(chosen):
+        text = text[:start] + PLACEHOLDERS[kind] + text[end:]
+        counts[kind] += 1
+    return text, counts
+
+
+def mask_value(value: object) -> tuple[object, Counter]:
+    """Mask every string inside a parsed JSON value; return it and counts by kind."""
+    counts: Counter = Counter()
+    if isinstance(value, str):
+        return mask_text(value)
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            out[k], c = mask_value(v)
+            counts += c
+        return out, counts
+    if isinstance(value, list):
+        items = []
+        for v in value:
+            masked, c = mask_value(v)
+            items.append(masked)
+            counts += c
+        return items, counts
+    return value, counts

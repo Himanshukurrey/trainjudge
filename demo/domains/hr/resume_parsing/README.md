@@ -9,10 +9,10 @@ trainjudge diagnose --dataset demo/domains/hr/resume_parsing/data.jsonl \
 
 | Rows | Count |
 |---|---|
-| Clean | 200 |
-| Duplicates | 12 |
-| Low-quality | 6 |
-| Malformed | 4 |
+| Clean | 600 |
+| Duplicates | 36 |
+| Low-quality | 18 |
+| Malformed | 12 |
 
 Planted sensitive identifiers (fictional values): email address ×3, date of birth ×3.
 

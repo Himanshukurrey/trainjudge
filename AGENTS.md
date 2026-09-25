@@ -16,8 +16,10 @@ Training and evals need an Apple Silicon Mac; `diagnose` and `audit` run anywher
    only continue if they explicitly ask to. For a FORMAT/BEHAVIOR or
    COST/LATENCY gap, ask before training, because it takes a while.
 2. **Respect sensitive-data refusals.** If `train` refuses because the audit
-   found card numbers, Aadhaar, PAN or similar identifiers, suggest masking.
-   Never add `--allow-sensitive-data` unless the user asks for it.
+   found card numbers, Aadhaar, PAN or similar identifiers, tell the user and
+   offer `--mask-sensitive`, which replaces them with placeholders like `[EMAIL]`
+   and trains on the masked rows. Never add `--allow-sensitive-data` unless the
+   user asks for it.
 3. **Train.** `trainjudge train --dataset <path> --model <model> --goal "<goal>"`.
    Add `--replay 200` when general skills matter.
 4. **Verify.** `trainjudge verify <run-dir>` (add `--db <database>` for SQL tasks).

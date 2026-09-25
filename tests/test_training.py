@@ -255,3 +255,25 @@ def test_add_replay_appends_to_train_only(tmp_path):
 def test_replay_count_is_bounded(tmp_path):
     with pytest.raises(runs.RunError, match="--replay"):
         training.prepare_run(SQL, "m", tmp_path, replay_count=10_000)
+
+
+def test_mask_sensitive_trains_on_masked_rows(tmp_path):
+    dataset = DEMO / "domains" / "healthcare" / "clinical_coding" / "data.jsonl"
+    prepared = training.prepare_run(dataset, "m", tmp_path, mask_sensitive=True)
+    assert prepared.record["prep"]["masked"] == {"date of birth": 3, "medical record number": 3}
+    text = "".join((prepared.run_dir / "data" / f"{s}.jsonl").read_text(encoding="utf-8")
+                   for s in ("train", "valid", "test"))  # fmt: skip
+    assert text.count("[MRN]") == 3 and text.count("[DOB]") == 3
+    assert audit_dataset(prepared.run_dir / "data" / "train.jsonl").sensitive == {}
+
+
+def test_label_like_answers_are_split_per_row(tmp_path):
+    dataset = DEMO / "domains" / "education" / "question_tagging" / "data.jsonl"
+    prepared = training.prepare_run(dataset, "m", tmp_path)
+    assert prepared.splits.method == runs.PER_ROW
+    train_labels = {row["completion"] for row in prepared.splits.train}
+    assert {row["completion"] for row in prepared.splits.test} <= train_labels  # no unseen labels
+
+
+def test_paraphrase_style_answers_stay_grouped(tmp_path):
+    assert training.prepare_run(SQL, "m", tmp_path).splits.method == runs.GROUPED

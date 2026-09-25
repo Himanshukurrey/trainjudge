@@ -29,6 +29,14 @@ MODEL_ALIASES = {
 }
 # Only the fields mlx-lm reads, per dataset format.
 FORMAT_FIELDS = {"completions": ("prompt", "completion"), "chat": ("messages",), "text": ("text",)}
+GROUPED = "grouped by normalized completion"
+PER_ROW = "per row (completions are labels shared by many rows)"
+# Grouping keeps paraphrases of one answer out of both train and test. It only makes
+# sense when answers are paraphrase-style: many small groups. Label-like answers
+# (a few values shared by many rows) are split per row, or whole labels would be
+# missing from training.
+MIN_GROUPS_FOR_GROUPING = 50
+MAX_MEDIAN_GROUP_SIZE = 10
 GENERIC_STEMS = {"data", "train", "dataset", "examples", "all"}
 
 
@@ -41,6 +49,7 @@ class Splits:
     train: list[dict]
     valid: list[dict]
     test: list[dict]
+    method: str = GROUPED
 
     def sizes(self) -> dict[str, int]:
         return {"train": len(self.train), "valid": len(self.valid), "test": len(self.test)}
@@ -71,7 +80,11 @@ def training_rows(report: AuditReport, keep_low_quality: bool = False) -> list[t
 def split_rows(
     rows: list[tuple[str, dict]], valid_fraction: float, test_fraction: float, seed: int
 ) -> Splits:
-    """Deterministic split by answer group: test first, then valid, the rest train."""
+    """Deterministic split: test first, then valid, the rest train.
+
+    Rows are grouped by answer when answers are paraphrase-style, so paraphrases of
+    one answer never land in both train and test; otherwise each row is its own group.
+    """
     if valid_fraction <= 0 or test_fraction <= 0 or valid_fraction + test_fraction >= 1:
         raise RunError("valid and test fractions must be positive and sum to less than 1")
     groups: dict[str, list[dict]] = defaultdict(list)
@@ -80,11 +93,17 @@ def split_rows(
     if len(groups) < 3:
         raise RunError(f"need at least 3 distinct completions to split, found {len(groups)}")
 
+    sizes = sorted(len(g) for g in groups.values())
+    method = GROUPED
+    if len(groups) < MIN_GROUPS_FOR_GROUPING or sizes[len(sizes) // 2] > MAX_MEDIAN_GROUP_SIZE:
+        method = PER_ROW
+        groups = {f"{i:08d}": [row] for i, (_, row) in enumerate(rows)}
+
     keys = sorted(groups)
     random.Random(seed).shuffle(keys)
     test_target = max(1, round(len(rows) * test_fraction))
     valid_target = max(1, round(len(rows) * valid_fraction))
-    splits = Splits([], [], [])
+    splits = Splits([], [], [], method)
     for key in keys:
         if len(splits.test) < test_target:
             splits.test.extend(groups[key])

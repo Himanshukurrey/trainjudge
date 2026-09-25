@@ -7,6 +7,7 @@ raw output and outcome, so a verdict can always be traced back to examples.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from collections.abc import Callable
@@ -15,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from trainjudge import eval_json, eval_sql, mlx_backend, regression_check, runs, tasks
+
+CACHE_DIR = ".baseline-cache"
 
 BASELINE = "baseline"
 FINETUNED = "finetuned"
@@ -29,6 +32,29 @@ def test_rows(run_dir: Path, limit: int | None = None) -> list[dict]:
     if rows and "completion" not in rows[0]:
         raise runs.RunError("evals need prompt/completion rows with gold completions")
     return rows[:limit] if limit else rows
+
+
+def _cache_file(run_dir: Path, kind: str, parts: dict) -> Path:
+    """Where a baseline result is cached, keyed by everything that determines it.
+
+    The base model's answers depend only on the model, the prompts, decoding and (for
+    SQL) the database, so every run in the same runs folder that shares them can reuse
+    one baseline instead of regenerating it.
+    """
+    key = hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()[:24]
+    return run_dir.parent / CACHE_DIR / f"{kind}-{key}.json"
+
+
+def _load_cached(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _save_cached(path: Path, result: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
 
 def resolve_task(
@@ -63,8 +89,13 @@ def evaluate_target(
     on_progress: Callable[[int, int], None] = lambda done, total: None,
     generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
     task: str | None = None,
+    use_cache: bool = True,
 ) -> dict:
-    """Generate and score one target; write and return its eval record."""
+    """Generate and score one target; write and return its eval record.
+
+    Baselines are reused from other runs with the same model, test split, decoding and
+    database unless `use_cache` is False.
+    """
     if target not in TARGETS:
         raise ValueError(f"unknown target {target!r}")
     record = runs.read_run_json(run_dir)
@@ -75,6 +106,26 @@ def evaluate_target(
     task, db_path = resolve_task(run_dir, task, db_path)
     rows = test_rows(run_dir, limit)
     decoding = decoding or mlx_backend.DecodingConfig()
+
+    cache = None
+    if target == BASELINE:
+        cache = _cache_file(run_dir, "task", {
+            "model": record["model"],
+            "task": task,
+            "test_split": runs.file_sha256(run_dir / "data" / "test.jsonl"),
+            "limit": limit,
+            "decoding": asdict(decoding),
+            "database": runs.file_sha256(db_path) if db_path else None,
+        })  # fmt: skip
+        cached = _load_cached(cache) if use_cache else None
+        if cached is not None:
+            result = {
+                **cached,
+                "run": str(run_dir),
+                "cached_from": cached.get("cached_from") or cached.get("run"),
+            }
+            result["test_split"] = {**cached["test_split"], "path": str(run_dir / "data" / "test.jsonl")}
+            return _record_task_eval(run_dir, record, target, task, db_path, result)
 
     start = time.monotonic()
     outputs = generate(
@@ -92,6 +143,7 @@ def evaluate_target(
         "target": target,
         "model": record["model"],
         "adapter_path": str(adapter) if adapter else None,
+        "run": str(run_dir),
         "task": task,
         "database": {"path": str(db_path), "sha256": runs.file_sha256(db_path)} if db_path else None,
         "test_split": {
@@ -105,6 +157,12 @@ def evaluate_target(
         **report.to_dict(),
     }
 
+    if cache is not None:
+        _save_cached(cache, result)
+    return _record_task_eval(run_dir, record, target, task, db_path, result)
+
+
+def _record_task_eval(run_dir: Path, record: dict, target: str, task: str, db_path, result: dict) -> dict:
     eval_dir = run_dir / "eval"
     eval_dir.mkdir(exist_ok=True)
     (eval_dir / f"{target}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
@@ -134,6 +192,7 @@ def evaluate_regression(
     decoding: mlx_backend.DecodingConfig | None = None,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
     generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    use_cache: bool = True,
 ) -> dict:
     """Run the general-capability suite for one target; write and return its record."""
     if target not in TARGETS:
@@ -145,6 +204,24 @@ def evaluate_regression(
 
     items = regression_check.build_suite()
     decoding = decoding or mlx_backend.DecodingConfig(max_tokens=256)
+    path = eval_path(run_dir, target, regression=True)
+    cache = None
+    if target == BASELINE:
+        cache = _cache_file(run_dir, "regression", {
+            "model": record["model"],
+            "prompts": [i.prompt for i in items],
+            "decoding": asdict(decoding),
+        })  # fmt: skip
+        cached = _load_cached(cache) if use_cache else None
+        if cached is not None:
+            result = {
+                **cached,
+                "run": str(run_dir),
+                "cached_from": cached.get("cached_from") or cached.get("run"),
+            }
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+            return result
     start = time.monotonic()
     outputs = generate(
         record["model"],
@@ -158,12 +235,14 @@ def evaluate_regression(
         "model": record["model"],
         "adapter_path": str(adapter) if adapter else None,
         "suite": "trainjudge-regression-v1",
+        "run": str(run_dir),
         "decoding": asdict(decoding),
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "duration_s": round(time.monotonic() - start, 1),
         **regression_check.to_dict(regression_check.score(items, outputs)),
     }
-    path = eval_path(run_dir, target, regression=True)
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    if cache is not None:
+        _save_cached(cache, result)
     return result

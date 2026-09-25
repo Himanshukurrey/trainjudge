@@ -58,8 +58,16 @@ def verify_run(
         else:
             stage(f"eval:{target}", f"Evaluating {label} model on the held-out test split...")
             task[target] = evaluation.evaluate_target(
-                run_dir, target, db_path, on_progress=progress, generate=generate, task=task_name
+                run_dir,
+                target,
+                db_path,
+                on_progress=progress,
+                generate=generate,
+                task=task_name,
+                use_cache=not rerun,
             )
+            if task[target].get("cached_from"):
+                log(f"  reused the baseline from {task[target]['cached_from']} (same model and test split)")
         cached = None if rerun else evaluation.load_eval(run_dir, target, regression=True)
         if cached is not None:
             log(f"Using saved {label} regression check.")
@@ -67,8 +75,10 @@ def verify_run(
         else:
             stage(f"regression:{target}", f"Running the regression check on the {label} model...")
             regression[target] = evaluation.evaluate_regression(
-                run_dir, target, on_progress=progress, generate=generate
+                run_dir, target, on_progress=progress, generate=generate, use_cache=not rerun
             )
+            if regression[target].get("cached_from"):
+                log(f"  reused the baseline regression check from {regression[target]['cached_from']}")
 
     if tracker:
         tracker.stage("verdict")

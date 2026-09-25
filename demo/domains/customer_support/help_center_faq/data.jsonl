@@ -1,80 +1,80 @@
-{"prompt": "Can you tell me the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "Can you tell me the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
-{"prompt": "What is the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
-{"prompt": "What is the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "What is the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
-{"prompt": "Someone is asking about the support hours. What should I tell them?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "According to current policy, what is the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
-{"prompt": "Please confirm the free trial length.", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "Hi, what's the support response time for Business customers? (again)"}
-{"prompt": "Someone is asking about the free trial length. What should I tell them?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "Someone is asking about the seat limit on the Starter plan. What should I tell them?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
-{"prompt": "What is the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "Hi, what's the seat limit on the Starter plan?", "completion": "TODO"}
-{"prompt": "According to current policy, what is the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "Someone is asking about the storage included in the Business plan. What should I tell them?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "Hi, what's the price of the Team plan?", "completion": "N/A"}
-{"prompt": "Quick question: what's the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "According to current policy, what is the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "Can you tell me the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "According to current policy, what is the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
-{"prompt": "Can you tell me the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "Someone is asking about the data residency options. What should I tell them?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "Quick question: what's the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
-{"prompt": "Can you tell me the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "What is the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
-{"prompt": "Please confirm the support response time for Business customers.", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
-{"prompt": "Can you tell me the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
-{"prompt": " According to current policy, what is the uptime commitment?  ", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
-{"prompt": "According to current policy, what is the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "According to current policy, what is the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "Quick question: what's the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "Someone is asking about the export formats. What should I tell them?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "Can you tell me the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
-{"prompt": "Someone is asking about the price of the Team plan. What should I tell them?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
-{"prompt": "What is the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
-{"prompt": "Can you tell me the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
-{"prompt": "Please confirm the free trial length.", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "Please confirm the uptime commitment.", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
-{"prompt": "Someone is asking about the refund window. What should I tell them?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
-{"prompt": "Someone is asking about the support response time for Business customers. What should I tell them?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
-{"prompt": "Quick question: what's the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "Please confirm the SSO availability.", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
-{"prompt": "According to current policy, what is the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
-{"prompt": "Someone is asking about the data retention period after cancellation. What should I tell them?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
-{"prompt": "What is the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "Please confirm the price of the Team plan.", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
-{"prompt": "Quick question: what's the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
-{"prompt": "Quick question: what's the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
-{"prompt": "Quick question: what's the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "Please confirm the storage included in the Business plan.", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
-{"prompt": "Please confirm the refund window.", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
-{"prompt": "Please confirm the support hours.", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "Quick question: what's the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
-{"prompt": "According to current policy, what is the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
-{"prompt": "Can you tell me the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "What is the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
-{"prompt": "Can you tell me the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
-{"prompt": "Quick question: what's the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
-{"prompt": "Quick question: what's the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
-{"prompt": "According to current policy, what is the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
-{"prompt": "Can you tell me the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
 {"prompt": "What is the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the support response time for Business customers. What should I tell them?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the data residency options. What should I tell them?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
+{"prompt": "Someone is asking about the refund window. What should I tell them?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
+{"prompt": "What is the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "Quick question: what's the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "Please confirm the uptime commitment.", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the support hours. What should I tell them?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "Quick question: what's the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "What is the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "Can you tell me the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
+{"prompt": "Hi, what's the support response time for Business customers? (again)"}
+{"prompt": "According to current policy, what is the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "According to current policy, what is the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
+{"prompt": "Hi, what's the seat limit on the Starter plan?", "completion": "TODO"}
+{"prompt": "Please confirm the storage included in the Business plan.", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
+{"prompt": "Can you tell me the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": " Quick question: what's the export formats?  ", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
+{"prompt": "Please confirm the refund window.", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the SSO availability. What should I tell them?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "What is the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
+{"prompt": "Quick question: what's the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
+{"prompt": "Someone is asking about the uptime commitment. What should I tell them?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "According to current policy, what is the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "Please confirm the free trial length.", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "Can you tell me the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
+{"prompt": "According to current policy, what is the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
 {"prompt": "Please confirm the seat limit on the Starter plan.", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
+{"prompt": "Someone is asking about the export formats. What should I tell them?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
+{"prompt": "Someone is asking about the price of the Team plan. What should I tell them?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "Please confirm the export formats.", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
+{"prompt": "quick question: what's the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
+{"prompt": "Can you tell me the free trial length?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "Quick question: what's the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
+{"prompt": "What is the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "According to current policy, what is the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
+{"prompt": "Can you tell me the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "According to current policy, what is the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "According to current policy, what is the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "Quick question: what's the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "According to current policy, what is the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
 {"prompt": "Quick question: what's the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the free trial length. What should I tell them?", "completion": "Every paid plan starts with a 14-day free trial.", "source": "plans.md"}
+{"prompt": "What is the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
+{"prompt": "Can you tell me the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
+{"prompt": "What is the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
+{"prompt": "Quick question: what's the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
+{"prompt": "Hi, what's the price of the Team plan?", "completion": "N/A"}
+{"prompt": "Can you tell me the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
+{"prompt": "Someone is asking about the data retention period after cancellation. What should I tell them?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
+{"prompt": "Can you tell me the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "According to current policy, what is the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "Quick question: what's the storage included in the Business plan?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
 {"prompt": "According to current policy, what is the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
 {"prompt": "Can you tell me the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
-{"prompt": "Please confirm the data retention period after cancellation.", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
+{"prompt": "What is the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "Please confirm the SSO availability.", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "Someone is asking about the storage included in the Business plan. What should I tell them?", "completion": "The Business plan includes 1 TB of storage per workspace.", "source": "plans.md"}
+{"prompt": "Can you tell me the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Quick question: what's the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
 {"prompt": "Quick question: what's the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "Can you tell me the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
+{"prompt": "Please confirm the support hours.", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "Can you tell me the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
+{"prompt": "According to current policy, what is the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
+{"prompt": "What is the data retention period after cancellation?", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
 {"prompt": "Hi, what's the support hours? (again)", "completion": ""}
-{"prompt": "can you tell me the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "What is the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Please confirm the data retention period after cancellation.", "completion": "Workspace data is kept for 60 days after cancellation, then deleted.", "source": "data_policy.md"}
 {"prompt": "Please confirm the data residency options.", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "Someone is asking about the SSO availability. What should I tell them?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
-{"prompt": "Someone is asking about the uptime commitment. What should I tell them?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
-{"prompt": "Please confirm the export formats.", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "According to current policy, what is the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Quick question: what's the uptime commitment?", "completion": "Quillbox commits to 99.9% monthly uptime on the Business plan.", "source": "support_policy.md"}
+{"prompt": "Quick question: what's the support response time for Business customers?", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
+{"prompt": "Someone is asking about the seat limit on the Starter plan. What should I tell them?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
 {"prompt": "What is the export formats?", "completion": "Workspaces can be exported as JSON or CSV at any time.", "source": "data_policy.md"}
-{"prompt": "Quick question: what's the price of the Team plan?", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
-{"prompt": "What is the data residency options?", "completion": "Business and Enterprise plans can store data in the EU or the US.", "source": "data_policy.md"}
-{"prompt": "What is the SSO availability?", "completion": "SAML SSO is available on the Business plan and above.", "source": "data_policy.md"}
+{"prompt": "What is the seat limit on the Starter plan?", "completion": "The Starter plan includes up to 5 seats.", "source": "plans.md"}
 {"prompt": "According to current policy, what is the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}
+{"prompt": "Please confirm the support response time for Business customers.", "completion": "Business customers get a first response within 4 business hours.", "source": "support_policy.md"}
+{"prompt": "Please confirm the price of the Team plan.", "completion": "The Team plan costs $12 per user per month, billed annually.", "source": "plans.md"}
+{"prompt": "What is the support hours?", "completion": "Chat support is open 7:00 to 19:00 UTC, Monday to Friday.", "source": "support_policy.md"}
+{"prompt": "What is the refund window?", "completion": "Annual plans can be refunded in full within 30 days of purchase.", "source": "support_policy.md"}

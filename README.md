@@ -203,9 +203,12 @@ agent can review the call.
 
 ### Sensitive data
 
-Every dataset is scanned, whatever the domain, and `train` refuses to run on flagged data
-unless you pass `--allow-sensitive-data`. Fine-tuned models can memorize and repeat
-training data, so mask or tokenize these first:
+Every dataset is scanned, whatever the domain. Fine-tuned models can memorize and repeat
+training data, so `train` refuses to run on flagged data. `--mask-sensitive` replaces each
+identifier with a placeholder (`[EMAIL]`, `[MRN]`, `[CARD]`…) and trains on the masked
+rows, keeping labels like "MRN:" readable. `trainjudge audit --write-clean OUT
+--mask-sensitive` writes a masked copy instead, and `--allow-sensitive-data` trains on the
+raw data if you really mean to. Detected identifiers:
 
 | Region | Identifiers |
 |---|---|
@@ -295,10 +298,14 @@ Before training, it:
 1. audits the dataset and drops duplicate and malformed rows. Low-quality rows are dropped
    too unless you pass `--keep-low-quality`.
 2. refuses to train if the audit finds card numbers, Aadhaar, PAN or other sensitive
-   identifiers, unless you pass `--allow-sensitive-data`.
+   identifiers. `--mask-sensitive` masks them and continues; `--allow-sensitive-data`
+   trains on them as they are.
 3. splits the data into train, validation and **held-out test** sets (80/10/10 by
-   default). Rows are grouped by answer, so paraphrases of one answer never land in both
-   train and test. Only `trainjudge verify` reads the test split.
+   default). When answers are paraphrase-style (many distinct answers, each shared by a
+   few rows, like SQL queries), rows are grouped by answer so paraphrases of one answer
+   never land in both train and test. When answers are labels shared by many rows (like
+   a category), the split is per row, so every label appears in training. `run.json`
+   records which was used. Only `trainjudge verify` reads the test split.
 
 Each run gets its own folder under `trainjudge-runs/`, holding the splits, the mlx-lm
 config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adapters and
@@ -334,6 +341,11 @@ answer. The per-field breakdown shows which fields fine-tuning fixed. That cover
 fine-tune demo of every domain pack: clinical coding, clause extraction, product
 attributes, ticket triage, resume parsing, transaction categorization and question
 tagging.
+
+The base model's results only depend on the model, the test split, decoding and (for
+SQL) the database, so they're cached in `trainjudge-runs/.baseline-cache/` and reused by
+every later run that shares them. A second experiment on the same data skips the
+baseline entirely. `verify --rerun` regenerates everything.
 
 The base model is scored fairly: SQL and JSON are extracted from code fences and
 surrounding prose, both models use greedy decoding with the same prompt, and Qwen3's
@@ -424,8 +436,6 @@ trainjudge-runs/2026-09-24-sql_generation-3
 
 - A retrieval-grounded QA eval, so the "don't fine-tune" demos can show fine-tuning vs
   retrieval side by side
-- Masking for flagged identifiers, so demos with planted PII can be trained without
-  `--allow-sensitive-data`
 - `gemini-extension.json` and Cursor rules
 - Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
 - A Windows/CUDA training path

@@ -25,9 +25,9 @@ from pathlib import Path
 HERE = Path(__file__).parent
 SEED = 20260925
 
-N_DUPLICATE = {"finetune": 12, "retrieval": 4}
-N_LOW_QUALITY = {"finetune": 6, "retrieval": 2}
-N_MALFORMED = {"finetune": 4, "retrieval": 2}
+N_DUPLICATE = {"finetune": 36, "retrieval": 4}
+N_LOW_QUALITY = {"finetune": 18, "retrieval": 2}
+N_MALFORMED = {"finetune": 12, "retrieval": 2}
 
 QUESTION_TEMPLATES = [
     "What is {topic}?",
@@ -49,7 +49,8 @@ class FinetuneCase:
     instruction: str
     make_example: object  # (rng) -> (input_text, output_dict)
     make_pii_example: object  # (rng, i) -> (input_text, output_dict)
-    n_clean: int = 200
+    # 600 clean rows -> a ~60-example held-out test split, enough for a real gain to be significant.
+    n_clean: int = 600
     n_pii: int = 6
     pii_kinds: dict[str, int] = field(default_factory=dict)
 
@@ -153,7 +154,7 @@ CLAUSES = {
 def contract_clause(rng: random.Random) -> tuple[str, dict]:
     kind = rng.choice(list(CLAUSES))
     party = rng.choice(PARTIES)
-    months = rng.choice([3, 6, 9, 12, 18, 24, 36, 48])
+    months = rng.choice([1, 2, 3, 6, 9, 12, 18, 24, 30, 36, 48, 60])
     text = rng.choice(CLAUSES[kind]).format(party=party, months=months, days=rng.choice([15, 30, 45, 60, 90]))
     duration = months if kind in ("termination", "confidentiality", "non_compete") else None
     return text, {"clause_type": kind, "party": party, "duration_months": duration}

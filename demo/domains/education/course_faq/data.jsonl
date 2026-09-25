@@ -1,80 +1,80 @@
-{"prompt": "Please confirm the resit exam period.", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "Someone is asking about the resit exam period. What should I tell them?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
 {"prompt": "Someone is asking about the late submission penalty. What should I tell them?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
-{"prompt": "What is the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
-{"prompt": "Someone is asking about the add/drop deadline. What should I tell them?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
-{"prompt": "Someone is asking about the date of the Physics 101 midterm. What should I tell them?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "What is the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
-{"prompt": "Quick question: what's the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
-{"prompt": "Please confirm the tuition payment deadline.", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
-{"prompt": "Hi, what's the tuition payment deadline? (again)", "completion": ""}
-{"prompt": " Quick question: what's the attendance requirement?  ", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
-{"prompt": "Quick question: what's the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
-{"prompt": "Quick question: what's the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "Someone is asking about the tuition payment deadline. What should I tell them?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "According to current policy, what is the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
 {"prompt": "According to current policy, what is the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "Please confirm the add/drop deadline.", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
-{"prompt": "According to current policy, what is the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
-{"prompt": "Quick question: what's the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "Hi, what's the date of the Physics 101 midterm?", "completion": "TODO"}
-{"prompt": "According to current policy, what is the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
-{"prompt": "Can you tell me the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "According to current policy, what is the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
+{"prompt": "Hi, what's the date of the Calculus I final exam?", "completion": "N/A"}
+{"prompt": "What is the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
+{"prompt": "Can you tell me the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "What is the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
+{"prompt": "Please confirm the extension policy.", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "Hi, what's the tuition payment deadline? (again)", "completion": ""}
+{"prompt": "What is the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Someone is asking about the add/drop deadline. What should I tell them?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
+{"prompt": "According to current policy, what is the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
+{"prompt": "Someone is asking about the date of the Calculus I final exam. What should I tell them?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "Quick question: what's the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "Please confirm the resit exam period.", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
+{"prompt": "According to current policy, what is the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "What is the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "According to current policy, what is the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
 {"prompt": "Someone is asking about the extension policy. What should I tell them?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
-{"prompt": "Please confirm the withdrawal deadline.", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
-{"prompt": "Someone is asking about the academic integrity process. What should I tell them?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Please confirm the date of the Physics 101 midterm.", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
+{"prompt": "Can you tell me the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
+{"prompt": "What is the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "What is the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "Please confirm the academic integrity process.", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Quick question: what's the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Someone is asking about the exam results release date. What should I tell them?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
+{"prompt": "Quick question: what's the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "Can you tell me the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "Can you tell me the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
+{"prompt": "Can you tell me the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
 {"prompt": "What is the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
-{"prompt": "Someone is asking about the attendance requirement. What should I tell them?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
+{"prompt": "What is the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
+{"prompt": "According to current policy, what is the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
+{"prompt": "Please confirm the add/drop deadline.", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
+{"prompt": "someone is asking about the academic integrity process. what should i tell them?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Quick question: what's the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
+{"prompt": "Someone is asking about the academic integrity process. What should I tell them?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
 {"prompt": "Can you tell me the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
 {"prompt": "Can you tell me the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
-{"prompt": "What is the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
-{"prompt": "What is the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "Quick question: what's the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "According to current policy, what is the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "Please confirm the tuition payment deadline.", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "Someone is asking about the withdrawal deadline. What should I tell them?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "Quick question: what's the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
+{"prompt": "Please confirm the date of the Calculus I final exam.", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "Quick question: what's the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
+{"prompt": "Hi, what's the date of the Physics 101 midterm?", "completion": "TODO"}
+{"prompt": "Quick question: what's the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
+{"prompt": "Someone is asking about the thesis submission deadline. What should I tell them?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
+{"prompt": "Someone is asking about the attendance requirement. What should I tell them?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
 {"prompt": "Quick question: what's the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
-{"prompt": "Quick question: what's the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "Someone is asking about the tuition payment deadline. What should I tell them?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
+{"prompt": "According to current policy, what is the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "Quick question: what's the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
+{"prompt": "What is the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
+{"prompt": "Can you tell me the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
+{"prompt": "What is the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "According to current policy, what is the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "Someone is asking about the resit exam period. What should I tell them?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
+{"prompt": " Someone is asking about the late submission penalty. What should I tell them?  ", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "Can you tell me the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "What is the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "Quick question: what's the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "Hi, what's the add/drop deadline? (again)"}
+{"prompt": "Quick question: what's the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
+{"prompt": "Can you tell me the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "Please confirm the late submission penalty.", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
+{"prompt": "According to current policy, what is the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
+{"prompt": "According to current policy, what is the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
 {"prompt": "Can you tell me the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
 {"prompt": "Please confirm the thesis submission deadline.", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "Someone is asking about the exam results release date. What should I tell them?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "What is the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
-{"prompt": "Can you tell me the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "can you tell me the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "Hi, what's the add/drop deadline? (again)"}
-{"prompt": "Someone is asking about the date of the Calculus I final exam. What should I tell them?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "What is the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "According to current policy, what is the attendance requirement?", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
-{"prompt": "According to current policy, what is the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
-{"prompt": "Can you tell me the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "What is the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "Quick question: what's the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
-{"prompt": "Please confirm the extension policy.", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
-{"prompt": "Quick question: what's the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "What is the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
+{"prompt": "Please confirm the withdrawal deadline.", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
 {"prompt": "Can you tell me the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "Someone is asking about the thesis submission deadline. What should I tell them?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "Can you tell me the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "Can you tell me the withdrawal deadline?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
-{"prompt": "Hi, what's the date of the Calculus I final exam?", "completion": "N/A"}
-{"prompt": "Someone is asking about the withdrawal deadline. What should I tell them?", "completion": "Students can withdraw with a W grade until November 14.", "source": "deadlines.md"}
-{"prompt": "Can you tell me the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "Please confirm the academic integrity process.", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
-{"prompt": "Quick question: what's the late submission penalty?", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
-{"prompt": "What is the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
-{"prompt": "Please confirm the late submission penalty.", "completion": "Late coursework loses 5% per day, up to 5 days, then scores zero.", "source": "policies.md"}
-{"prompt": "Can you tell me the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
-{"prompt": "Quick question: what's the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
-{"prompt": "Please confirm the date of the Calculus I final exam.", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "Can you tell me the resit exam period?", "completion": "Resit exams run from January 8 to 19.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the tuition payment deadline?", "completion": "Autumn tuition is due by October 1; late payment adds a $75 fee.", "source": "deadlines.md"}
 {"prompt": "Please confirm the attendance requirement.", "completion": "Students must attend at least 80% of seminars to sit the exam.", "source": "policies.md"}
+{"prompt": "What is the thesis submission deadline?", "completion": "Final-year theses are due on April 30 at 17:00.", "source": "deadlines.md"}
 {"prompt": "Please confirm the exam results release date.", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "Quick question: what's the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
-{"prompt": "Please confirm the date of the Physics 101 midterm.", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "Quick question: what's the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "What is the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "What is the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
-{"prompt": "Can you tell me the extension policy?", "completion": "Extensions of up to 7 days need a request before the deadline.", "source": "policies.md"}
-{"prompt": "What is the exam results release date?", "completion": "Autumn exam results are released on January 5.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the date of the Calculus I final exam?", "completion": "The Calculus I final is on December 12 at 09:00 in Hall B.", "source": "exams.md"}
-{"prompt": "According to current policy, what is the add/drop deadline?", "completion": "Courses can be added or dropped until September 26.", "source": "deadlines.md"}
+{"prompt": "Can you tell me the academic integrity process?", "completion": "Suspected misconduct is reviewed by a panel within 15 working days.", "source": "policies.md"}
+{"prompt": "Someone is asking about the date of the Physics 101 midterm. What should I tell them?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}
+{"prompt": "Can you tell me the date of the Physics 101 midterm?", "completion": "The Physics 101 midterm is on October 22 at 14:00.", "source": "exams.md"}

@@ -313,3 +313,40 @@ def test_verify_run_reports_each_stage(trained_run):
         "regression:finetuned",
         "verdict",
     ]
+
+
+def test_baseline_is_reused_across_runs(tmp_path):
+    runs_dir = tmp_path / "runs"
+    calls = []
+
+    def make_run():
+        prepared = training.prepare_run(DEMO / "data.jsonl", "Qwen3-0.6B", runs_dir)
+        adapters = prepared.run_dir / "adapters"
+        adapters.mkdir()
+        (adapters / "adapters.safetensors").write_bytes(b"")
+        record = runs.read_run_json(prepared.run_dir)
+        record.update(status="trained", training={"train_loss_drop_pct": 50.0})
+        runs.write_run_json(prepared.run_dir, record)
+        return prepared.run_dir
+
+    first, second = make_run(), make_run()
+
+    def counting(run_dir):
+        model = good_model(run_dir)
+
+        def generate(model_name, prompts, adapter_path=None, decoding=None, on_progress=None):
+            calls.append("finetuned" if adapter_path else "baseline")
+            return model(model_name, prompts, adapter_path, decoding, on_progress)
+
+        return generate
+
+    verification.verify_run(first, SHOP, generate=counting(first))
+    assert calls.count("baseline") == 2  # task eval + regression check
+    logs = []
+    result = verification.verify_run(second, SHOP, generate=counting(second), log=logs.append)
+    assert calls.count("baseline") == 2  # both reused, not regenerated
+    assert any("reused the baseline from" in line and str(first) in line for line in logs)
+    assert result.verdict.outcome == verdict.IMPROVED
+
+    verification.verify_run(second, SHOP, generate=counting(second), rerun=True)
+    assert calls.count("baseline") == 4  # --rerun bypasses the cache
