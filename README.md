@@ -12,7 +12,7 @@
   <a href="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml"><img src="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.1.0-green.svg" alt="Version 0.1.0"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Apache 2.0 license"></a>
   <a href="#training-local-mlx"><img src="https://img.shields.io/badge/training-Apple%20Silicon%20%C2%B7%20MLX-black.svg" alt="Training on Apple Silicon with MLX"></a>
   <a href="#using-it-from-claude-code"><img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757.svg" alt="Claude Code plugin"></a>
 </p>
@@ -146,7 +146,7 @@ trainjudge status
 trainjudge diagnose --dataset <path> --model <name> --goal "<text>"
 trainjudge audit <path>
 trainjudge train --dataset <path> --model <name>
-trainjudge eval <run-dir> --db <database>
+trainjudge eval <run-dir> [--db <database>]      # --db for SQL tasks only
 trainjudge verify <run-dir> [--db <database>]
 trainjudge status [<run-dir>]
 ```
@@ -307,26 +307,38 @@ config, the raw log, the parsed loss curve (`logs/training_log.jsonl`), the adap
 learning rate 5e-5, batch 4, 2 epochs, loss on completions only. Run
 `trainjudge train --help` for all options.
 
-### Evaluation: SQL execution accuracy
+### Evaluation
 
 `trainjudge eval` scores the base model and the fine-tuned adapter on the run's
-held-out test split. Neither model sees these rows during training.
+held-out test split. Neither model sees these rows during training. The task type is
+detected from the gold completions (`--task` overrides it):
+
+| Task | Detected when the gold answers are | Main metric | Also reported |
+|---|---|---|---|
+| **SQL** | SQL queries | Execution accuracy: the query returns the same rows as the gold query | Lenient (extra columns allowed) |
+| **JSON** | JSON objects | Exact match: every gold field is right | Field-level accuracy, and accuracy per field |
 
 ```bash
-trainjudge eval trainjudge-runs/2026-09-24-sql_generation --db demo/sql_generation/shop.sql
+trainjudge eval <run-dir> --db demo/sql_generation/shop.sql   # SQL: needs the database
+trainjudge eval <run-dir>                                      # JSON: nothing else needed
 ```
 
-Each generated query runs read-only against the database, with a 5-second timeout,
-and counts as correct only if it returns the same rows as the gold query. Row order
-matters only when the gold query ends with `ORDER BY`. A **lenient** score, which
-allows extra columns, is reported alongside it. The gap between the two shows how
-much of a change comes from learned conventions (selecting exactly what was asked)
-rather than from getting the underlying query right.
+**SQL:** each generated query runs read-only against the database, with a 5-second
+timeout. Row order matters only when the gold query ends with `ORDER BY`. The lenient
+score shows how much of a change comes from learned conventions (selecting exactly what
+was asked) rather than from getting the underlying query right.
 
-The base model is scored fairly: SQL is extracted from code fences and surrounding
-prose, both models use greedy decoding with the same prompt, and Qwen3's thinking
-mode is off for both. With thinking off, the prompt ends in the same empty think
-block the training data contains. Every example's prompt, raw output, extracted SQL
+**JSON:** the object is compared field by field. Text ignores case and extra whitespace,
+numbers compare by value (`3` = `3.0` = `"3"`), and extra fields don't count against the
+answer. The per-field breakdown shows which fields fine-tuning fixed. That covers the
+fine-tune demo of every domain pack: clinical coding, clause extraction, product
+attributes, ticket triage, resume parsing, transaction categorization and question
+tagging.
+
+The base model is scored fairly: SQL and JSON are extracted from code fences and
+surrounding prose, both models use greedy decoding with the same prompt, and Qwen3's
+thinking mode is off for both. With thinking off, the prompt ends in the same empty think
+block the training data contains. Every example's prompt, raw output, extracted answer
 and outcome is saved to `<run>/eval/baseline.json` and `<run>/eval/finetuned.json`.
 
 ### Verdict
@@ -372,7 +384,11 @@ trainjudge-runs/2026-09-24-sql_generation-3
 - `trainjudge status` shows the most recently updated run; pass a run folder to pick one.
 - `--all` lists every run with its state: running, done, failed, interrupted, or
   stopped (the process died without reporting that it finished).
-- `--watch` follows a job until it finishes.
+- `--watch` follows a job until it finishes. Add `--milestones` for one line per
+  milestone only (stage started, 25/50/75%, stage done, finished or failed). That's what
+  coding agents should watch: command output often isn't shown live (in the Claude Code
+  VS Code extension it appears only when a command ends), and each milestone line can
+  become a chat notification, so the user hears about every stage without asking.
 - `--json` gives agents the same information.
 - Add `--notify` to `train`, `eval` or `verify` for a desktop notification (macOS) when
   it finishes or fails.
@@ -389,8 +405,9 @@ trainjudge-runs/2026-09-24-sql_generation-3
   doesn't replace a proper data-protection review.
 - The audit's low-quality checks are heuristics too. They can miss subtly wrong answers
   and can flag legitimate ones.
-- The task eval in v0.1 covers text-to-SQL only (execution accuracy). Other task types
-  can be diagnosed and trained, but `verify` can't score them yet.
+- `eval` and `verify` score SQL (execution accuracy) and JSON objects (exact match).
+  Free-form prose answers, such as the retrieval demos, can be diagnosed and trained but
+  not scored automatically yet.
 - Evaluation uses a held-out split of your own dataset. If the dataset is templated, the
   test split shares its templates, and real-world accuracy will be lower.
 
@@ -405,8 +422,10 @@ trainjudge-runs/2026-09-24-sql_generation-3
 
 ## Roadmap
 
-- Task evals beyond SQL: JSON/field extraction (so every domain's fine-tune demo can be
-  verified end to end) and retrieval-grounded QA
+- A retrieval-grounded QA eval, so the "don't fine-tune" demos can show fine-tuning vs
+  retrieval side by side
+- Masking for flagged identifiers, so demos with planted PII can be trained without
+  `--allow-sensitive-data`
 - `gemini-extension.json` and Cursor rules
 - Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
 - A Windows/CUDA training path
@@ -417,4 +436,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE).

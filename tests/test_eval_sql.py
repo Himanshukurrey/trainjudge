@@ -224,4 +224,4 @@ def test_finetuned_eval_needs_adapter(tmp_path):
 def test_cli_eval_requires_db_first_time(trained_run):
     result = CliRunner().invoke(main, ["eval", str(trained_run), "--json"])
     assert result.exit_code != 0
-    assert "--db is required" in result.output
+    assert "needs --db" in result.output

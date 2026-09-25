@@ -15,6 +15,7 @@ from trainjudge import (
     evaluation,
     mlx_backend,
     runs,
+    tasks,
     training,
     verdict,
     verification,
@@ -240,8 +241,15 @@ def _duration(seconds: float) -> str:
     "--db",
     "db_path",
     type=click.Path(exists=True, dir_okay=False),
-    help="SQLite database (.sqlite/.db) or SQL script (.sql) to run queries against. "
-    "Defaults to the one recorded by a previous eval of this run.",
+    help="SQL tasks only: SQLite database (.sqlite/.db) or SQL script (.sql) to run queries "
+    "against. Defaults to the one recorded by a previous eval of this run.",
+)
+@click.option(
+    "--task",
+    type=click.Choice(["auto", "sql", "json"]),
+    default="auto",
+    show_default=True,
+    help="What to score: SQL execution accuracy or JSON exact match (auto: detect from the test split).",
 )
 @click.option(
     "--target",
@@ -258,6 +266,7 @@ def _duration(seconds: float) -> str:
 def eval_command(
     run_dir: str,
     db_path: str | None,
+    task: str,
     target: str,
     limit: int | None,
     max_tokens: int,
@@ -266,15 +275,16 @@ def eval_command(
     as_json: bool,
     notify: bool,
 ) -> None:
-    """Measure SQL execution accuracy of the base model and the fine-tuned adapter."""
+    """Score the base model and the fine-tuned adapter on the held-out test split."""
     run = Path(run_dir)
     try:
         record = runs.read_run_json(run)
     except FileNotFoundError as e:
         raise click.ClickException(f"{run} has no run.json; is it a trainjudge run?") from e
-    db_path = db_path or (record.get("task") or {}).get("database")
-    if not db_path:
-        raise click.UsageError("--db is required the first time a run is evaluated.")
+    try:
+        task, db = evaluation.resolve_task(run, task, Path(db_path) if db_path else None)
+    except runs.RunError as e:
+        raise click.UsageError(str(e)) from e
     if reason := mlx_backend.unavailable_reason():
         raise click.ClickException(reason)
 
@@ -285,8 +295,8 @@ def eval_command(
     labels = {"baseline": "Baseline (no fine-tuning)", "finetuned": "Fine-tuned"}
     log = (lambda *a, **k: None) if as_json else click.echo
     rows = len(evaluation.test_rows(run, limit))
-    log(f"SQL execution accuracy on {rows:,} held-out test examples")
-    log(f"  Database: {db_path}\n")
+    log(f"{tasks.TASKS[task].label} on {rows:,} held-out test examples")
+    log(f"  Database: {db}\n" if db else "")
 
     results = {}
     with StatusTracker(run, "eval", notify_on_finish=notify) as tracker:
@@ -299,7 +309,7 @@ def eval_command(
                 tracker.progress(done, total)
 
             try:
-                result = evaluation.evaluate_target(run, t, Path(db_path), decoding, limit, on_progress)
+                result = evaluation.evaluate_target(run, t, db, decoding, limit, on_progress, task=task)
             except runs.RunError as e:
                 raise click.ClickException(str(e)) from e
             results[t] = result
@@ -324,9 +334,10 @@ def _accuracy_line(result: dict) -> str:
     outcomes = result["outcomes"]
     correct = outcomes["correct"]
     issues = [f"{n:,} {name.replace('_', ' ')}" for name, n in outcomes.items() if n and name != "correct"]
+    secondary = result.get("secondary") or {"label": "lenient", "value": result.get("lenient_accuracy", 0)}
     line = (
         f"Accuracy {result['accuracy']:.1%} ({correct:,}/{result['scored']:,}) · "
-        f"lenient {result['lenient_accuracy']:.1%}"
+        f"{secondary['label'].lower()} {secondary['value']:.1%}"
     )
     return line + (f" · {' · '.join(issues)}" if issues else "")
 
@@ -337,7 +348,14 @@ def _accuracy_line(result: dict) -> str:
     "--db",
     "db_path",
     type=click.Path(exists=True, dir_okay=False),
-    help="Database for the SQL eval (defaults to the one recorded for this run).",
+    help="SQL tasks only: the database queries run against (defaults to the one recorded for this run).",
+)
+@click.option(
+    "--task",
+    type=click.Choice(["auto", "sql", "json"]),
+    default="auto",
+    show_default=True,
+    help="What to score: SQL execution accuracy or JSON exact match (auto: detect from the test split).",
 )
 @click.option(
     "--min-improvement",
@@ -359,6 +377,7 @@ def _accuracy_line(result: dict) -> str:
 def verify(
     run_dir: str,
     db_path: str | None,
+    task: str,
     min_improvement: float,
     regression_tolerance: float,
     rerun: bool,
@@ -380,6 +399,7 @@ def verify(
                 rerun,
                 log=click.echo,
                 tracker=tracker,
+                task=task,
             )
         except runs.RunError as e:
             raise click.ClickException(str(e)) from e
@@ -407,11 +427,23 @@ def verify(
 @click.option("--all", "show_all", is_flag=True, help="List every run instead of the latest one.")
 @click.option("--watch", is_flag=True, help="Keep printing progress until the job finishes.")
 @click.option(
+    "--milestones",
+    is_flag=True,
+    help="With --watch, print one line per milestone only (stage start, 25/50/75%, stage done, "
+    "finish or failure). Made for agents: each line can become a chat notification.",
+)
+@click.option(
     "--interval", type=float, default=5.0, show_default=True, help="Seconds between --watch updates."
 )
 @click.option("--json", "as_json", is_flag=True, help="Print the status as JSON (for agents).")
 def status_command(
-    run_dir: str | None, runs_dir: str, show_all: bool, watch: bool, interval: float, as_json: bool
+    run_dir: str | None,
+    runs_dir: str,
+    show_all: bool,
+    watch: bool,
+    milestones: bool,
+    interval: float,
+    as_json: bool,
 ) -> None:
     """Show what a train/eval/verify job is doing: stage, progress, ETA, finished or not."""
     import time
@@ -437,6 +469,11 @@ def status_command(
             raise click.ClickException(f"No runs with status in {runs_dir}/.")
         path = found[0][0]
 
+    if milestones:
+        # A job that was just launched may not have written its status yet.
+        deadline = time.monotonic() + 60
+        while st.read_status(path) is None and time.monotonic() < deadline:
+            time.sleep(1)
     status = st.read_status(path)
     if status is None:
         raise click.ClickException(
@@ -445,6 +482,8 @@ def status_command(
     if as_json:
         click.echo(json.dumps({**status, "state": st.effective_state(status)}, indent=2))
         return
+    if milestones:
+        raise SystemExit(_watch_milestones(path, status, interval))
     click.echo(st.format_status(path, status))
     if not watch:
         return
@@ -461,6 +500,41 @@ def status_command(
     click.echo(st.format_status(path, status))
     if st.effective_state(status) != st.DONE:
         raise SystemExit(1)
+
+
+def _watch_milestones(path: Path, status: dict, interval: float) -> int:
+    """Print one flushed line per milestone until the job ends; return the exit code."""
+    import time
+
+    from trainjudge import status as st
+
+    def say(text: str) -> None:
+        click.echo(f"[trainjudge {status['command']}] {text}")
+
+    announced: set[tuple] = set()
+    seen_stages = 0
+    while True:
+        for s in status.get("stages", [])[seen_stages:]:
+            say(f"✓ {s['label']} done ({st._duration(s['duration_s'])})")
+        seen_stages = len(status.get("stages", []))
+
+        state = st.effective_state(status)
+        if state != st.RUNNING:
+            mark = {st.DONE: "✓ finished", st.FAILED: "✗ failed", st.INTERRUPTED: "■ interrupted"}
+            say(f"{mark.get(state, '✗ stopped (process gone)')}: {status.get('message') or ''}".rstrip(": "))
+            return 0 if state == st.DONE else 1
+
+        stage, step, total = status.get("stage"), status.get("step") or 0, status.get("total")
+        if stage and (stage, "start") not in announced:
+            announced.add((stage, "start"))
+            say(f"▶ {status['stage_label']} started" + (f" ({total:,} items)" if total else ""))
+        if stage and total:
+            quarter = min(3, int(step / total * 4))
+            if quarter and (stage, quarter) not in announced:
+                announced.update((stage, q) for q in range(1, quarter + 1))
+                say(f"… {st.progress_text(status)}")
+        time.sleep(interval)
+        status = st.read_status(path) or status
 
 
 if __name__ == "__main__":

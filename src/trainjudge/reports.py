@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+
+from trainjudge import tasks
 from trainjudge.regression_check import CATEGORY_LABELS
 from trainjudge.verdict import IMPROVED, REGRESSED, REJECTED, Verdict, format_p
 
@@ -25,7 +28,27 @@ def _regression_table(v: Verdict) -> list[str]:
 
 
 def _question(prompt: str) -> str:
-    return prompt.split("Question: ", 1)[-1].strip()
+    """The part of the prompt that varies: after "Question:" or "Input:", if present."""
+    for marker in ("Question: ", "Input: "):
+        if marker in prompt:
+            return prompt.split(marker, 1)[-1].strip()
+    return prompt.strip()
+
+
+def _task_of(evaluation: dict) -> tasks.TaskInfo:
+    return tasks.TASKS[evaluation.get("task", tasks.SQL)]
+
+
+def _compact(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False) if value is not None else "_no JSON_"
+
+
+def _json_answer(e: dict) -> str:
+    text = f"`{_compact(e['predicted'])}`" if e["predicted"] is not None else "_no JSON_"
+    problems = [f"wrong {k}" for k in e.get("wrong_fields", [])] + [
+        f"missing {k}" for k in e.get("missing_fields", [])
+    ]
+    return text + (f" ({', '.join(problems)})" if problems else "")
 
 
 def _flipped(baseline_eval: dict, finetuned_eval: dict) -> tuple[list, list]:
@@ -40,19 +63,23 @@ def _flipped(baseline_eval: dict, finetuned_eval: dict) -> tuple[list, list]:
     return gained, lost
 
 
-def _example_block(pairs: list, title: str) -> list[str]:
+def _example_block(pairs: list, title: str, task: str = tasks.SQL) -> list[str]:
     if not pairs:
         return []
     lines = [f"### {title} ({len(pairs)})", ""]
     for base, tuned in pairs[:MAX_EXAMPLES]:
+        if task == tasks.SQL:
+            gold = f"`{base['gold_sql']}`"
+            answers = [f"`{' '.join(e['sql'].split())}`" if e["sql"] else "_no SQL_" for e in (base, tuned)]
+        else:
+            gold = f"`{_compact(base['gold'])}`"
+            answers = [_json_answer(e) for e in (base, tuned)]
         lines += [
-            f"**Q:** {_question(base['prompt'])}",
+            f"**Input:** {_question(base['prompt'])}",
             "",
-            f"- Gold: `{base['gold_sql']}`",
-            f"- Baseline ({base['outcome'].replace('_', ' ')}): "
-            + (f"`{' '.join(base['sql'].split())}`" if base["sql"] else "_no SQL_"),
-            f"- Fine-tuned ({tuned['outcome'].replace('_', ' ')}): "
-            + (f"`{' '.join(tuned['sql'].split())}`" if tuned["sql"] else "_no SQL_"),
+            f"- Gold: {gold}",
+            f"- Baseline ({base['outcome'].replace('_', ' ')}): {answers[0]}",
+            f"- Fine-tuned ({tuned['outcome'].replace('_', ' ')}): {answers[1]}",
             "",
         ]
     if len(pairs) > MAX_EXAMPLES:
@@ -89,6 +116,7 @@ def experiment_report(
     training = run.get("training") or {}
     dataset = run["dataset"]
     gained, lost = _flipped(baseline_eval, finetuned_eval)
+    task = _task_of(finetuned_eval)
     lines = [
         f"# Experiment report: {run_dir.rstrip('/').split('/')[-1]}",
         "",
@@ -98,15 +126,15 @@ def experiment_report(
     if run.get("goal"):
         lines += [f"**Goal:** {run['goal']}", ""]
     lines += [
-        "## Task metric: SQL execution accuracy (held-out test split)",
+        f"## Task metric: {task.label} (held-out test split)",
         "",
         "| | Baseline | Fine-tuned | Change |",
         "|---|---|---|---|",
         (
-            f"| Execution accuracy | {_pct(v.baseline)} | {_pct(v.finetuned)} | "
+            f"| {task.short_label} | {_pct(v.baseline)} | {_pct(v.finetuned)} | "
             f"{v.improvement_points:+.1f} pts |"
         ),
-        f"| Lenient (extra columns allowed) | {_pct(v.baseline_lenient)} | "
+        f"| {task.secondary_label} | {_pct(v.baseline_lenient)} | "
         f"{_pct(v.finetuned_lenient)} | "
         + (
             f"{(v.finetuned_lenient - v.baseline_lenient) * 100:+.1f} pts |"
@@ -127,6 +155,11 @@ def experiment_report(
         m = finetuned_eval["outcomes"].get(outcome, 0)
         if n or m:
             lines.append(f"| {outcome.replace('_', ' ')} | {n} | {m} |")
+    if finetuned_eval.get("per_field"):
+        base_fields = baseline_eval.get("per_field", {})
+        lines += ["", "| Field | Baseline | Fine-tuned |", "|---|---|---|"]
+        for name, value in finetuned_eval["per_field"].items():
+            lines.append(f"| `{name}` | {_pct(base_fields.get(name))} | {_pct(value)} |")
     lines += [
         "",
         "## Regression check (held-out general tasks)",
@@ -144,8 +177,8 @@ def experiment_report(
     lines += [
         "## Examples",
         "",
-        *_example_block(gained, "Fixed by fine-tuning"),
-        *_example_block(lost, "Broken by fine-tuning"),
+        *_example_block(gained, "Fixed by fine-tuning", task.name),
+        *_example_block(lost, "Broken by fine-tuning", task.name),
         *_regression_examples(baseline_reg, finetuned_reg),
     ]
 
@@ -180,9 +213,13 @@ def experiment_report(
             f"- Splits: {prep['splits']['train']:,} train · {prep['splits']['valid']:,} valid · "
             f"{prep['splits']['test']:,} test ({prep['split_method']}, seed {prep['seed']})"
         ),
-        (
-            f"- Database: `{baseline_eval['database']['path']}` (sha256 "
-            f"`{baseline_eval['database']['sha256'][:12]}…`)"
+        *(
+            [
+                f"- Database: `{baseline_eval['database']['path']}` (sha256 "
+                f"`{baseline_eval['database']['sha256'][:12]}…`)"
+            ]
+            if baseline_eval.get("database")
+            else []
         ),
         "",
         "## Reproduce",
@@ -194,16 +231,16 @@ def experiment_report(
             f"--learning-rate {cfg['learning_rate']:g} --rank {cfg['rank']} "
             f"--num-layers {cfg['num_layers']} --seed {cfg['seed']}"
         ),
-        f"trainjudge eval <run-dir> --db {baseline_eval['database']['path']}",
-        "trainjudge verify <run-dir>",
+        (
+            f"trainjudge verify <run-dir> --db {baseline_eval['database']['path']}"
+            if baseline_eval.get("database")
+            else "trainjudge verify <run-dir>"
+        ),
         "```",
         "",
         "## Caveats",
         "",
-        (
-            "- Execution accuracy checks result rows on one database. A query can match by "
-            "coincidence on this data and still be wrong in general."
-        ),
+        f"- {task.caveat}",
         "- The regression suite is a small heuristic check, not a full benchmark.",
         (
             "- Both models use greedy decoding with the same prompt, so results are deterministic "
@@ -214,7 +251,8 @@ def experiment_report(
     return "\n".join(lines)
 
 
-def model_card(run: dict, v: Verdict, run_dir: str) -> str:
+def model_card(run: dict, v: Verdict, run_dir: str, task_name: str = tasks.SQL) -> str:
+    task = tasks.TASKS[task_name]
     cfg = run["config"]
     prep = run["prep"]
     status = {
@@ -229,17 +267,17 @@ def model_card(run: dict, v: Verdict, run_dir: str) -> str:
         "tags:",
         "  - lora",
         "  - mlx",
-        "  - text-to-sql",
+        f"  - {task.card_task_type}",
         "  - trainjudge",
         "model-index:",
         f"  - name: {run_dir.rstrip('/').split('/')[-1]}",
         "    results:",
         "      - task:",
-        "          type: text-to-sql",
+        f"          type: {task.card_task_type}",
         "        metrics:",
-        "          - type: execution_accuracy",
+        f"          - type: {task.card_metric_type}",
         f"            value: {v.finetuned:.4f}",
-        "            name: SQL execution accuracy (held-out)",
+        f"            name: {task.label} (held-out)",
         "---",
         "",
         f"# LoRA adapter for {run['model']}",
@@ -248,13 +286,13 @@ def model_card(run: dict, v: Verdict, run_dir: str) -> str:
         "",
         "## Intended use",
         "",
-        run.get("goal") or "Text-to-SQL for the schema in the training data.",
+        run.get("goal") or f"The task in the training data, measured by {task.label.lower()}.",
         "",
         "## Evaluation",
         "",
         "| Metric | Base model | This adapter |",
         "|---|---|---|",
-        f"| SQL execution accuracy (n={v.scored}) | {_pct(v.baseline)} | {_pct(v.finetuned)} |",
+        f"| {task.label} (n={v.scored}) | {_pct(v.baseline)} | {_pct(v.finetuned)} |",
     ]
     for r in v.regressions:
         lines.append(
@@ -283,7 +321,11 @@ def model_card(run: dict, v: Verdict, run_dir: str) -> str:
         "",
         "## Limitations",
         "",
-        "- Trained and evaluated on one schema. Expect it to fail on other databases.",
+        (
+            "- Trained and evaluated on one schema. Expect it to fail on other databases."
+            if task.name == tasks.SQL
+            else "- Trained and evaluated on one output schema and one data source."
+        ),
         (
             "- Evaluated on a held-out split of the same dataset, which may share templates or "
             "phrasing with the training data."

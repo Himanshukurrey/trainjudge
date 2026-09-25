@@ -31,13 +31,12 @@ def verify_run(
     log: Callable[[str], None] = lambda msg: None,
     generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
     tracker: StatusTracker | None = None,
+    task: str | None = None,
 ) -> VerifyResult:
     run = runs.read_run_json(run_dir)
     if run.get("status") != "trained":
         raise runs.RunError(f"{run_dir} hasn't finished training (status: {run.get('status')})")
-    db_path = db_path or Path((run.get("task") or {}).get("database") or "")
-    if not db_path or not db_path.is_file():
-        raise runs.RunError("pass --db the first time a run is verified")
+    task_name, db_path = evaluation.resolve_task(run_dir, task, db_path)
 
     def progress(done: int, total: int) -> None:
         log(f"  generated {done:,}/{total:,}")
@@ -53,13 +52,13 @@ def verify_run(
     for target in evaluation.TARGETS:
         label = "baseline" if target == evaluation.BASELINE else "fine-tuned"
         cached = None if rerun else evaluation.load_eval(run_dir, target)
-        if _usable(cached):
+        if _usable(cached) and cached.get("task", "sql") == task_name:
             log(f"Using saved {label} task eval ({cached['accuracy']:.1%}).")
             task[target] = cached
         else:
             stage(f"eval:{target}", f"Evaluating {label} model on the held-out test split...")
             task[target] = evaluation.evaluate_target(
-                run_dir, target, db_path, on_progress=progress, generate=generate
+                run_dir, target, db_path, on_progress=progress, generate=generate, task=task_name
             )
         cached = None if rerun else evaluation.load_eval(run_dir, target, regression=True)
         if cached is not None:
@@ -101,7 +100,7 @@ def verify_run(
         run_dir / "EXPERIMENT_REPORT.md",
         run_dir / "eval_results.json",
     ]
-    artifacts[0].write_text(reports.model_card(run, v, str(run_dir)), encoding="utf-8")
+    artifacts[0].write_text(reports.model_card(run, v, str(run_dir), task_name), encoding="utf-8")
     artifacts[1].write_text(
         reports.experiment_report(
             run,

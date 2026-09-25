@@ -92,6 +92,7 @@ class EvalReport:
             "metric": "sql_execution_accuracy",
             "accuracy": self.accuracy,
             "lenient_accuracy": self.lenient_accuracy,
+            "secondary": {"label": "Lenient (extra columns allowed)", "value": self.lenient_accuracy},
             "scored": len(self.scored),
             "outcomes": self.outcomes(),
             "examples": [asdict(e) for e in self.examples],

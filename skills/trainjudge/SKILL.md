@@ -60,11 +60,12 @@ which limits regressions. `--dry-run` prepares everything without training.
 **4. Verify before saying the model improved:**
 
 ```
-trainjudge verify <run-dir> --db <database>
+trainjudge verify <run-dir>   # add --db <database> for SQL tasks
 ```
 
-For SQL tasks, `--db` is the SQLite database (or `.sql` script) the queries
-should run against. It's only needed the first time.
+The task (SQL or JSON) is detected from the test split. For SQL tasks, `--db` is
+the SQLite database (or `.sql` script) the queries run against; it's only needed the
+first time. JSON tasks need nothing else.
 
 **5. Report the verdict honestly. Don't override it with the loss curve:**
 
@@ -81,32 +82,41 @@ Point the user to `EXPERIMENT_REPORT.md` and `MODEL_CARD.md` in the run folder.
 
 ## Keep the user informed during long jobs
 
-`train` takes minutes to hours and `verify` several minutes. Don't go silent:
+`train` takes minutes to hours and `verify` several minutes. Command output often isn't
+shown live (for example in the VS Code extension it appears only when the command ends),
+so never rely on it. Don't go silent:
 
-- Run `train` and `verify` as background commands, not blocking calls.
-- Before starting, tell the user what's about to run and roughly how long it
-  will take. Both commands print a `Progress: trainjudge status <run>` line
-  near the start.
-- While it runs, check `trainjudge status <run-dir> --json` every minute or
-  two. It reports `state` (`running`, `done`, `failed`, `interrupted`, or
-  `stopped` if the process died without finishing), the current `stage_label`,
-  `step`/`total`, `eta_s` and the finished `stages`. Tell the user when each
-  stage finishes and what's next, with the ETA. For example: "Training done
-  (7m 41s). Now running the baseline eval, about 4 minutes left."
-- When `state` is `done`, report the result. If it's `failed` or `stopped`,
-  say so right away with the `message`, and check `<run>/logs/mlx.log` for
-  training failures.
-- `trainjudge status --all` lists every run, if the user asks what's running.
+1. Before starting, tell the user what's about to run and roughly how long it will take.
+2. Run `train` or `verify` as a **background** command.
+3. Right after, watch its milestones so each one reaches the user without polling:
 
-Suggest `--notify` if the user wants a desktop notification when a job
-finishes, and `trainjudge status --watch` if they want to follow it in their
-own terminal.
+   ```
+   trainjudge status <run-dir> --watch --milestones
+   ```
+
+   It prints one line per milestone (stage started, 25/50/75%, stage done with its
+   duration, then finished or failed) and exits when the job ends. With a Monitor
+   tool, run it there so every line becomes a notification. Without one, run it in
+   the background and read its output as it grows. For `train`, the run folder is
+   the `Prepared run …` line near the start of the output; `trainjudge status` with
+   no folder shows the most recent run.
+4. **Relay every milestone to the user** in a short line, with what's next and the ETA.
+   For example: "Training done (1m 50s). Now running the baseline eval, about a minute
+   left."
+5. On `✓ finished`, report the result. On `✗ failed` or `✗ stopped`, say so right away
+   with the message, and check `<run>/logs/mlx.log` for training failures.
+
+`trainjudge status <run-dir> --json` gives a one-off snapshot (`state`, `stage_label`,
+`step`/`total`, `eta_s`, finished `stages`), and `trainjudge status --all` lists every
+run if the user asks what's running. Suggest `--notify` if the user wants a desktop
+notification when a job finishes.
 
 ## Limitations to keep in mind
 
 The diagnosis is a transparent heuristic, not a guarantee, and mixed goals
-(part knowledge, part format) are common. The task eval in v0.1 covers
-text-to-SQL (execution accuracy). The regression suite is small (60 prompts)
+(part knowledge, part format) are common. `eval` and `verify` score SQL
+(execution accuracy) and JSON objects (exact match); free-form prose answers
+aren't scored automatically yet. The regression suite is small (60 prompts)
 and catches broken instruction-following and formatting, not subtle capability
 loss. Run folders contain examples from the test split, so treat them as
 being as sensitive as the dataset.

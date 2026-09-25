@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from math import comb
 
 from trainjudge.regression_check import CATEGORIES, CATEGORY_LABELS
+from trainjudge.tasks import METRIC_LABELS
 
 IMPROVED = "IMPROVED"
 REGRESSED = "REGRESSED"
@@ -65,6 +66,7 @@ class Verdict:
     regressions: list[RegressionResult]
     train_loss_drop_pct: float | None
     min_improvement: float
+    secondary_label: str = "Lenient"
     reasons: list[str] = field(default_factory=list)
 
     @property
@@ -86,6 +88,7 @@ class Verdict:
                 "improvement_points": self.improvement_points,
                 "baseline_lenient": self.baseline_lenient,
                 "finetuned_lenient": self.finetuned_lenient,
+                "secondary_label": self.secondary_label,
                 "scored": self.scored,
                 "gained": self.gained,
                 "lost": self.lost,
@@ -164,8 +167,9 @@ def decide(
         gained=gained,
         lost=lost,
         p_value=mcnemar_p(gained, lost),
-        baseline_lenient=baseline_eval.get("lenient_accuracy"),
-        finetuned_lenient=finetuned_eval.get("lenient_accuracy"),
+        baseline_lenient=_secondary(baseline_eval),
+        finetuned_lenient=_secondary(finetuned_eval),
+        secondary_label=(finetuned_eval.get("secondary") or {}).get("label", "Lenient"),
         regressions=regressions,
         train_loss_drop_pct=train_loss_drop_pct,
         min_improvement=min_improvement,
@@ -206,11 +210,15 @@ def decide(
     return verdict
 
 
+def _secondary(evaluation: dict) -> float | None:
+    """The eval's secondary metric (lenient SQL match, JSON field accuracy)."""
+    if evaluation.get("secondary"):
+        return evaluation["secondary"]["value"]
+    return evaluation.get("lenient_accuracy")
+
+
 def format_p(p: float) -> str:
     return "p < 0.001" if p < 0.001 else f"p = {p:.3f}"
-
-
-METRIC_LABELS = {"sql_execution_accuracy": "SQL execution accuracy"}
 
 
 def format_box(v: Verdict) -> str:

@@ -20,18 +20,18 @@ Training and evals need an Apple Silicon Mac; `diagnose` and `audit` run anywher
    Never add `--allow-sensitive-data` unless the user asks for it.
 3. **Train.** `trainjudge train --dataset <path> --model <model> --goal "<goal>"`.
    Add `--replay 200` when general skills matter.
-4. **Verify.** `trainjudge verify <run-dir> --db <database>`.
+4. **Verify.** `trainjudge verify <run-dir>` (add `--db <database>` for SQL tasks).
 5. **Report the verdict as-is.** IMPROVED means it worked. REGRESSED means the
    task improved but general capability broke, so don't call it ready to
    deploy. REJECTED means it didn't really improve, whatever the loss did.
    Never claim improvement from training loss alone.
 
-**Long jobs: keep the user informed.** `train` and `verify` take minutes.
-Run them in the background, and every minute or two check
-`trainjudge status <run-dir> --json` (`state`, `stage_label`, `step`/`total`,
-`eta_s`, finished `stages`). Tell the user when each stage finishes, what's
-next and the ETA. Report `failed` or `stopped` right away. Never go quiet
-until the result is in.
+**Long jobs: keep the user informed.** `train` and `verify` take minutes, and
+command output often isn't shown live. Run them in the background, then run
+`trainjudge status <run-dir> --watch --milestones`, which prints one line per
+milestone (stage started, 25/50/75%, stage done, finished or failed) and exits
+when the job ends. Relay each milestone to the user with what's next and the
+ETA, and report failures right away. Never go quiet until the result is in.
 
 Full details: [skills/trainjudge/SKILL.md](skills/trainjudge/SKILL.md).
 

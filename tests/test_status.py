@@ -106,3 +106,70 @@ def test_cli_status_without_runs(tmp_path):
     result = CliRunner().invoke(main, ["status", "--runs-dir", str(tmp_path)])
     assert result.exit_code != 0
     assert "No runs with status" in result.output
+
+
+def _run_job(tmp_path, fail=False):
+    """Simulate a job in a thread: two stages with progress, then finish or fail."""
+    import threading
+    import time
+
+    started = threading.Event()
+
+    def job():
+        tracker = st.StatusTracker(tmp_path, "verify")
+        started.set()
+        for stage, total in (("eval:baseline", 8), ("regression:baseline", 4)):
+            tracker.stage(stage, total=total)
+            for step in range(1, total + 1):
+                time.sleep(0.02)
+                tracker.progress(step, total)
+        if fail:
+            tracker.fail("out of memory")
+        else:
+            tracker.finish("IMPROVED: task accuracy improved", result="IMPROVED")
+
+    thread = threading.Thread(target=job)
+    thread.start()
+    started.wait()
+    return thread
+
+
+def test_milestones_follow_a_job_to_the_end(tmp_path):
+    thread = _run_job(tmp_path)
+    result = CliRunner().invoke(
+        main, ["status", str(tmp_path), "--watch", "--milestones", "--interval", "0.005"]
+    )
+    thread.join()
+    assert result.exit_code == 0, result.output
+    lines = result.output.strip().splitlines()
+    assert all(line.startswith("[trainjudge verify] ") for line in lines)
+    text = "\n".join(lines)
+    assert "▶ Baseline task eval started (8 items)" in text
+    assert "✓ Baseline task eval done" in text
+    assert "✓ Baseline regression check done" in text
+    assert lines[-1] == "[trainjudge verify] ✓ finished: IMPROVED: task accuracy improved"
+    # Milestones only: no line per step.
+    assert len(lines) <= 12
+
+
+def test_milestones_report_failure(tmp_path):
+    thread = _run_job(tmp_path, fail=True)
+    result = CliRunner().invoke(
+        main, ["status", str(tmp_path), "--watch", "--milestones", "--interval", "0.005"]
+    )
+    thread.join()
+    assert result.exit_code == 1
+    assert result.output.strip().splitlines()[-1] == "[trainjudge verify] ✗ failed: out of memory"
+
+
+def test_milestones_report_a_dead_process(tmp_path):
+    tracker = st.StatusTracker(tmp_path, "train")
+    tracker.stage("train", total=10)
+    data = st.read_status(tmp_path)
+    data["pid"] = 999_999_999
+    (tmp_path / st.STATUS_FILE).write_text(json.dumps(data), encoding="utf-8")
+    result = CliRunner().invoke(
+        main, ["status", str(tmp_path), "--watch", "--milestones", "--interval", "0.01"]
+    )
+    assert result.exit_code == 1
+    assert "✗ stopped (process gone)" in result.output

@@ -14,7 +14,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from trainjudge import eval_sql, mlx_backend, regression_check, runs
+from trainjudge import eval_json, eval_sql, mlx_backend, regression_check, runs, tasks
 
 BASELINE = "baseline"
 FINETUNED = "finetuned"
@@ -27,18 +27,42 @@ def test_rows(run_dir: Path, limit: int | None = None) -> list[dict]:
         raise runs.RunError(f"{path} not found; is {run_dir} a trainjudge run directory?")
     rows = [json.loads(line) for line in path.open(encoding="utf-8")]
     if rows and "completion" not in rows[0]:
-        raise runs.RunError("SQL eval needs prompt/completion rows with gold SQL completions")
+        raise runs.RunError("evals need prompt/completion rows with gold completions")
     return rows[:limit] if limit else rows
+
+
+def resolve_task(
+    run_dir: Path, task: str | None = None, db_path: Path | None = None
+) -> tuple[str, Path | None]:
+    """The task to score (given, recorded by an earlier eval, or detected) and its database."""
+    recorded = runs.read_run_json(run_dir).get("task") or {}
+    if task in (None, "auto"):
+        task = recorded.get("type")
+    if task in (None, "auto"):
+        try:
+            task = tasks.detect(test_rows(run_dir))
+        except tasks.UnknownTask as e:
+            raise runs.RunError(str(e)) from e
+    if task not in tasks.TASKS:
+        raise runs.RunError(f"unknown task {task!r}; choose from {', '.join(tasks.TASKS)}")
+    if db_path is None and recorded.get("database"):
+        db_path = Path(recorded["database"])
+    if tasks.TASKS[task].needs_db and (db_path is None or not db_path.is_file()):
+        raise runs.RunError(
+            "the SQL eval needs --db: the database (or .sql script) queries should run against"
+        )
+    return task, db_path if tasks.TASKS[task].needs_db else None
 
 
 def evaluate_target(
     run_dir: Path,
     target: str,
-    db_path: Path,
+    db_path: Path | None = None,
     decoding: mlx_backend.DecodingConfig | None = None,
     limit: int | None = None,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
     generate: Callable[..., list[str]] = mlx_backend.generate_outputs,
+    task: str | None = None,
 ) -> dict:
     """Generate and score one target; write and return its eval record."""
     if target not in TARGETS:
@@ -48,8 +72,8 @@ def evaluate_target(
     if adapter is not None and not (adapter / "adapters.safetensors").exists():
         raise runs.RunError(f"no trained adapter in {adapter}; run `trainjudge train` first")
 
+    task, db_path = resolve_task(run_dir, task, db_path)
     rows = test_rows(run_dir, limit)
-    db = eval_sql.Database(db_path)
     decoding = decoding or mlx_backend.DecodingConfig()
 
     start = time.monotonic()
@@ -60,13 +84,16 @@ def evaluate_target(
         decoding=decoding,
         on_progress=on_progress,
     )
-    report = eval_sql.evaluate(db, rows, outputs)
+    if task == tasks.SQL:
+        report = eval_sql.evaluate(eval_sql.Database(db_path), rows, outputs)
+    else:
+        report = eval_json.evaluate(rows, outputs)
     result = {
         "target": target,
         "model": record["model"],
         "adapter_path": str(adapter) if adapter else None,
-        "task": "sql",
-        "database": {"path": str(db_path), "sha256": runs.file_sha256(db_path)},
+        "task": task,
+        "database": {"path": str(db_path), "sha256": runs.file_sha256(db_path)} if db_path else None,
         "test_split": {
             "path": str(run_dir / "data" / "test.jsonl"),
             "rows": len(rows),
@@ -82,7 +109,7 @@ def evaluate_target(
     eval_dir.mkdir(exist_ok=True)
     (eval_dir / f"{target}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
-    record["task"] = {"type": "sql", "database": str(db_path)}
+    record["task"] = {"type": task, "database": str(db_path) if db_path else None}
     record.setdefault("evals", {})[target] = {
         "accuracy": result["accuracy"],
         "scored": result["scored"],

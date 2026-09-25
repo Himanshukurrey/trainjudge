@@ -83,6 +83,11 @@ Open an issue describing what you expected vs. what happened, your OS, Python an
 exact command you ran. For problems with a run, attaching its `run.json` (and `eval_results.json`, if it got
 that far) is the fastest way to get it looked at. Check them for anything private first.
 
+## License of contributions
+
+TrainJudge is licensed under the [Apache License 2.0](LICENSE). By submitting a pull request, you
+agree that your contribution is licensed under the same terms (section 5 of the license).
+
 ## Code of conduct
 
 Be respectful. Disagreements about code are fine; personal attacks aren't. See
