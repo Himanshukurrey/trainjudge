@@ -149,7 +149,18 @@ def main() -> None:
         lora_kwargs.update(layers_to_transform=list(range(layers - cfg["num_layers"], layers)))
         if targets == ATTENTION_PROJECTIONS:
             lora_kwargs.update(layers_pattern="layers")
-    model = get_peft_model(model, LoraConfig(**lora_kwargs))
+    try:
+        model = get_peft_model(model, LoraConfig(**lora_kwargs))
+    except ImportError as e:
+        if "torchao" in str(e):
+            # peft refuses old torchao versions whenever torchao is installed (Colab ships one).
+            # TrainJudge doesn't use torchao, so removing it is the simplest fix.
+            raise SystemExit(
+                f"peft can't load because of an incompatible torchao: {e}\n"
+                "TrainJudge doesn't use torchao. Fix it with `pip uninstall torchao` "
+                "(or `pip install -U torchao`), then train again."
+            ) from e
+        raise
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     total = sum(p.numel() for p in model.parameters())
     log(f"Trainable parameters: {trainable / total:.3%} ({trainable / 1e6:.3f}M/{total / 1e6:.3f}M)")
