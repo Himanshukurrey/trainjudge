@@ -173,3 +173,31 @@ def test_milestones_report_a_dead_process(tmp_path):
     )
     assert result.exit_code == 1
     assert "✗ stopped (process gone)" in result.output
+
+
+def test_status_file_survives_windows_style_locking(tmp_path, monkeypatch):
+    """Windows refuses to replace or read a file that's mid-update; both sides retry."""
+    import os as os_module
+    from pathlib import Path as PathClass
+
+    tracker = st.StatusTracker(tmp_path, "train")
+    real_replace, real_read = os_module.replace, PathClass.read_text
+    busy = {"replace": 2, "read": 2}
+
+    def flaky_replace(src, dst):
+        if busy["replace"]:
+            busy["replace"] -= 1
+            raise PermissionError(13, "Permission denied")
+        return real_replace(src, dst)
+
+    def flaky_read(self, *args, **kwargs):
+        if self.name == st.STATUS_FILE and busy["read"]:
+            busy["read"] -= 1
+            raise PermissionError(13, "Permission denied")
+        return real_read(self, *args, **kwargs)
+
+    monkeypatch.setattr(st.os, "replace", flaky_replace)
+    monkeypatch.setattr(PathClass, "read_text", flaky_read)
+    tracker.stage("train", total=10)  # would raise without the writer's retry
+    assert st.read_status(tmp_path)["stage"] == "train"  # would raise without the reader's retry
+    assert busy == {"replace": 0, "read": 0}

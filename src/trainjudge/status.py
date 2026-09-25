@@ -43,12 +43,25 @@ def _age_s(iso: str | None) -> float | None:
     return (datetime.now(timezone.utc) - datetime.fromisoformat(iso)).total_seconds()
 
 
+# On Windows a file can't be replaced while another process has it open, and can't be
+# opened while it's being replaced. Readers and the writer both retry briefly.
+_RETRIES = 20
+_RETRY_DELAY_S = 0.02
+
+
 def read_status(run_dir: Path) -> dict | None:
+    """The job's status, or None if there's none yet (or it's mid-update on Windows)."""
     path = run_dir / STATUS_FILE
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+    for attempt in range(_RETRIES):
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+        except PermissionError:
+            if attempt == _RETRIES - 1:
+                return None
+            time.sleep(_RETRY_DELAY_S)
+    return None
 
 
 def pid_alive(pid: int | None) -> bool:
@@ -120,7 +133,14 @@ class StatusTracker:
         path = self.run_dir / STATUS_FILE
         tmp = path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
-        os.replace(tmp, path)
+        for attempt in range(_RETRIES):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == _RETRIES - 1:
+                    raise
+                time.sleep(_RETRY_DELAY_S)
 
     def _close_stage(self, state: str) -> None:
         if self.data["stage"]:
