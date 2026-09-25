@@ -8,7 +8,7 @@ the "knowledge gap" case: TrainJudge should recommend retrieval over
 versioned documents instead of fine-tuning. A few duplicate, low-quality and
 malformed rows are mixed in.
 
-    python demo/bfsi_loan_faq/generate.py
+    python demo/domains/bfsi/loan_faq/generate.py
 """
 
 from __future__ import annotations

@@ -142,7 +142,7 @@ def test_goal_match_beats_data_match(monkeypatch):
 
 
 def test_json_output_has_domain():
-    report = audit_dataset(DEMO / "bfsi_loan_faq" / "data.jsonl")
+    report = audit_dataset(DEMO / "domains" / "bfsi" / "loan_faq" / "data.jsonl")
     data = diagnose("answer questions about our loan interest rates", report).to_dict()
     assert data["domain"]["name"] == "bfsi"
     assert "interest rates" in data["domain"]["changing_fact_terms"]
@@ -155,7 +155,8 @@ def test_json_output_has_domain():
 
 
 def test_cli_domain_flag():
-    args = ["diagnose", "--dataset", str(DEMO / "bfsi_loan_faq" / "data.jsonl"), "--model", "m",
+    loan_faq = DEMO / "domains" / "bfsi" / "loan_faq" / "data.jsonl"
+    args = ["diagnose", "--dataset", str(loan_faq), "--model", "m",
             "--goal", "answer questions about our loan interest rates", "--json"]  # fmt: skip
     runner = CliRunner()
     assert json.loads(runner.invoke(main, args).output)["domain"]["name"] == "bfsi"

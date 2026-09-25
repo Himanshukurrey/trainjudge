@@ -69,9 +69,10 @@ jobs:
 
       - name: Regenerate demo datasets
         run: |
-          for demo in sql_generation policy_docs bfsi_transactions bfsi_loan_faq; do
+          for demo in sql_generation policy_docs domains/bfsi/transactions domains/bfsi/loan_faq; do
             python demo/$demo/generate.py
           done
+          python demo/domains/generate.py
 
       - name: Check nothing changed
         run: git diff --exit-code -- demo/

@@ -230,21 +230,22 @@ data (`--domain` forces one, or `--domain none` turns it off):
   human-in-the-loop and bias warning
 - **Domain notes:** for example keeping the report for model-risk review
 
-| Pack | Knowledge-gap signals (→ retrieval) | High-stakes decisions flagged |
-|---|---|---|
-| **Healthcare** | clinical guidelines, drug dosing, formularies, coverage | diagnosis, triage, prescribing, prior authorization |
-| **Legal** | case law, statutes, regulations by jurisdiction | legal advice, bail/parole, immigration, custody |
-| **E-commerce/retail** | prices, stock, promotions, catalog details | fraud flags, account/seller suspension, refund denial |
-| **Customer support** | help-center articles, policies, plans, SLAs | refund denial, account closure |
-| **HR/recruiting** | benefits, pay bands, handbooks, employment law | candidate screening and ranking, termination |
-| **BFSI** | interest rates, charges, KYC rules, regulator circulars | loan/credit and claim decisions |
-| **Education** | syllabi, exam dates, deadlines, admission rules | grading, admissions, misconduct findings |
+| Pack | Knowledge-gap signals (→ retrieval) | High-stakes decisions flagged | Demos: fine-tune · retrieval |
+|---|---|---|---|
+| **Healthcare** | clinical guidelines, drug dosing, formularies, coverage | diagnosis, triage, prescribing, prior authorization | [clinical coding](demo/domains/healthcare/clinical_coding/) · [formulary Q&A](demo/domains/healthcare/formulary_faq/) |
+| **Legal** | case law, statutes, regulations by jurisdiction | legal advice, bail/parole, immigration, custody | [clause extraction](demo/domains/legal/clause_extraction/) · [statutes Q&A](demo/domains/legal/statutes_faq/) |
+| **E-commerce/retail** | prices, stock, promotions, catalog details | fraud flags, account/seller suspension, refund denial | [product attributes](demo/domains/ecommerce/product_attributes/) · [catalog Q&A](demo/domains/ecommerce/catalog_faq/) |
+| **Customer support** | help-center articles, policies, plans, SLAs | refund denial, account closure | [ticket triage](demo/domains/customer_support/ticket_triage/) · [help-center Q&A](demo/domains/customer_support/help_center_faq/) |
+| **HR/recruiting** | benefits, pay bands, handbooks, employment law | candidate screening and ranking, termination | [resume parsing](demo/domains/hr/resume_parsing/) · [benefits Q&A](demo/domains/hr/benefits_faq/) |
+| **BFSI** | interest rates, charges, KYC rules, regulator circulars | loan/credit and claim decisions | [transactions](demo/domains/bfsi/transactions/) · [loan FAQ](demo/domains/bfsi/loan_faq/) |
+| **Education** | syllabi, exam dates, deadlines, admission rules | grading, admissions, misconduct findings | [question tagging](demo/domains/education/question_tagging/) · [course Q&A](demo/domains/education/course_faq/) |
 
-BFSI has two end-to-end demos: [bfsi_transactions](demo/bfsi_transactions/) (categorization:
-fine-tune, but mask the PII first) and [bfsi_loan_faq](demo/bfsi_loan_faq/) (rates and charges:
-don't fine-tune, use retrieval). The [SQL demo](demo/sql_generation/) is detected as
-e-commerce (it's a shop's order database) and the [policy-docs demo](demo/policy_docs/) as
-customer support.
+Every pack has two demos: a structured-output task where fine-tuning fits, with
+domain-typical sensitive identifiers planted in it (medical record numbers, emails, dates of
+birth, card numbers and so on), and a Q&A over that domain's documents where diagnosis
+recommends retrieval instead. All organizations, people, drugs and statutes in them are
+fictional. The [SQL demo](demo/sql_generation/) is detected as e-commerce (it's a shop's order
+database) and the [policy-docs demo](demo/policy_docs/) as customer support.
 
 A pack is one small Python file. See [Adding a domain pack](CONTRIBUTING.md#adding-a-domain-pack),
 or [request one](https://github.com/Himanshukurrey/trainjudge/issues/new?template=domain_pack.yml).
@@ -404,8 +405,8 @@ trainjudge-runs/2026-09-24-sql_generation-3
 
 ## Roadmap
 
-- Task evals beyond SQL: JSON/field extraction (for the BFSI transaction demo) and
-  retrieval-grounded QA
+- Task evals beyond SQL: JSON/field extraction (so every domain's fine-tune demo can be
+  verified end to end) and retrieval-grounded QA
 - `gemini-extension.json` and Cursor rules
 - Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
 - A Windows/CUDA training path

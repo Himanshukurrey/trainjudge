@@ -76,7 +76,7 @@ def test_keep_low_quality(tmp_path):
 
 
 def test_sensitive_data_is_refused_unless_allowed(tmp_path):
-    dataset = DEMO / "bfsi_transactions" / "data.jsonl"
+    dataset = DEMO / "domains" / "bfsi" / "transactions" / "data.jsonl"
     with pytest.raises(training.SensitiveDataError, match="card number"):
         training.prepare_run(dataset, "m", tmp_path)
     assert not tmp_path.exists() or not any(tmp_path.iterdir())
@@ -208,7 +208,7 @@ def test_cli_train_refuses_sensitive_data(tmp_path):
         [
             "train",
             "--dataset",
-            str(DEMO / "bfsi_transactions" / "data.jsonl"),
+            str(DEMO / "domains" / "bfsi" / "transactions" / "data.jsonl"),
             "--model",
             "m",
             "--runs-dir",

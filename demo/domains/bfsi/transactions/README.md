@@ -29,7 +29,7 @@ generated at random. All banks, merchants and people are fictional.
 | **Total** | **656** |
 
 ```bash
-trainjudge diagnose --dataset demo/bfsi_transactions/data.jsonl --model Qwen3-0.6B \
+trainjudge diagnose --dataset demo/domains/bfsi/transactions/data.jsonl --model Qwen3-0.6B \
   --goal "categorize bank transaction narrations into our category JSON"
-python demo/bfsi_transactions/generate.py   # regenerate (output is identical on every run)
+python demo/domains/bfsi/transactions/generate.py   # regenerate (output is identical on every run)
 ```

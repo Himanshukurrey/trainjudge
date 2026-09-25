@@ -11,7 +11,7 @@ so the sensitive-data scan has something to find. The identifiers are
 checksum-valid test values, not real ones. Duplicate, low-quality and malformed
 rows are mixed in as well.
 
-    python demo/bfsi_transactions/generate.py
+    python demo/domains/bfsi/transactions/generate.py
 """
 
 from __future__ import annotations

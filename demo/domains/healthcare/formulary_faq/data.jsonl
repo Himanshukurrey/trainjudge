@@ -1,0 +1,80 @@
+{"prompt": "Please confirm the formulary review cycle.", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "Someone is asking about the dosing interval for Relvix. What should I tell them?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "Hi, what's the maximum daily dose of Pentacor?", "completion": "TODO"}
+{"prompt": "Can you tell me the pediatric Zolvarin rule?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Quick question: what's the dosing interval for Relvix?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "Quick question: what's the non-formulary request process?", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "According to current policy, what is the restricted antibiotics list?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "What is the pediatric Zolvarin rule?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "What is the maximum daily dose of Pentacor?", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "Quick question: what's the adult dose of Zolvarin?", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "According to current policy, what is the IV-to-oral switch rule?", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "Can you tell me the high-alert medication rule?", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": " Quick question: what's the IV-to-oral switch rule?  ", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "Hi, what's the first-line antibiotic for community pneumonia? (again)"}
+{"prompt": "Someone is asking about the Cefalyn renal adjustment. What should I tell them?", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "Quick question: what's the restricted antibiotics list?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the generic substitution policy. What should I tell them?", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "What is the high-alert medication rule?", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the adult dose of Zolvarin.", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "According to current policy, what is the high-alert medication rule?", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": "Quick question: what's the pediatric Zolvarin rule?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Can you tell me the non-formulary request process?", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "What is the dosing interval for Relvix?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "Can you tell me the Cefalyn renal adjustment?", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "what is the restricted antibiotics list?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "Can you tell me the adult dose of Zolvarin?", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Can you tell me the dosing interval for Relvix?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "According to current policy, what is the first-line antibiotic for community pneumonia?", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}
+{"prompt": "Can you tell me the maximum daily dose of Pentacor?", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "Can you tell me the restricted antibiotics list?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the high-alert medication rule. What should I tell them?", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": "Someone is asking about the pediatric Zolvarin rule. What should I tell them?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Someone is asking about the non-formulary request process. What should I tell them?", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "Hi, what's the Cefalyn renal adjustment? (again)", "completion": ""}
+{"prompt": "What is the generic substitution policy?", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "Can you tell me the first-line antibiotic for community pneumonia?", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}
+{"prompt": "According to current policy, what is the adult dose of Zolvarin?", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Someone is asking about the maximum daily dose of Pentacor. What should I tell them?", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "Please confirm the restricted antibiotics list.", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "Quick question: what's the high-alert medication rule?", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the maximum daily dose of Pentacor.", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "According to current policy, what is the generic substitution policy?", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "According to current policy, what is the Cefalyn renal adjustment?", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "According to current policy, what is the pediatric Zolvarin rule?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Can you tell me the generic substitution policy?", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "What is the Cefalyn renal adjustment?", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "According to current policy, what is the non-formulary request process?", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the dosing interval for Relvix.", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "According to current policy, what is the dosing interval for Relvix?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "Hi, what's the adult dose of Zolvarin?", "completion": "N/A"}
+{"prompt": "Quick question: what's the first-line antibiotic for community pneumonia?", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}
+{"prompt": "Quick question: what's the Cefalyn renal adjustment?", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the IV-to-oral switch rule. What should I tell them?", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "What is the adult dose of Zolvarin?", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Someone is asking about the adult dose of Zolvarin. What should I tell them?", "completion": "Adults take 20 mg of Zolvarin once daily; the formulary limit is 40 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Someone is asking about the first-line antibiotic for community pneumonia. What should I tell them?", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}
+{"prompt": "Quick question: what's the dosing interval for Relvix?", "completion": "Relvix is given every 8 hours, with at least 6 hours between doses.", "source": "formulary_analgesics.md"}
+{"prompt": "Please confirm the IV-to-oral switch rule.", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "What is the first-line antibiotic for community pneumonia?", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}
+{"prompt": "Quick question: what's the IV-to-oral switch rule?", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the restricted antibiotics list. What should I tell them?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "Please confirm the non-formulary request process.", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the pediatric Zolvarin rule.", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Please confirm the Cefalyn renal adjustment.", "completion": "Halve the Cefalyn dose when eGFR falls below 30 mL/min.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the formulary review cycle. What should I tell them?", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "According to current policy, what is the maximum daily dose of Pentacor?", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "What is the restricted antibiotics list?", "completion": "Meropax and Linezorin need infectious-disease approval within 24 hours.", "source": "formulary_antibiotics.md"}
+{"prompt": "What is the formulary review cycle?", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the high-alert medication rule.", "completion": "High-alert medications need an independent double check by 2 nurses.", "source": "formulary_policy.md"}
+{"prompt": "Can you tell me the IV-to-oral switch rule?", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "Someone is asking about the pediatric Zolvarin rule. What should I tell them?", "completion": "Children aged 6 to 12 take 0.3 mg/kg of Zolvarin, up to 10 mg a day.", "source": "formulary_analgesics.md"}
+{"prompt": "Quick question: what's the maximum daily dose of Pentacor?", "completion": "Pentacor is capped at 3 g per day across all doses, 2 g for patients over 75.", "source": "formulary_analgesics.md"}
+{"prompt": "Quick question: what's the formulary review cycle?", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "Quick question: what's the generic substitution policy?", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "According to current policy, what is the formulary review cycle?", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the generic substitution policy.", "completion": "Pharmacy substitutes generics automatically unless the order says 'no substitution'.", "source": "formulary_policy.md"}
+{"prompt": "What is the IV-to-oral switch rule?", "completion": "Switch to oral after 48 hours if the patient is afebrile and eating.", "source": "formulary_antibiotics.md"}
+{"prompt": "What is the non-formulary request process?", "completion": "Non-formulary requests need a pharmacist review within 2 working days.", "source": "formulary_policy.md"}
+{"prompt": "Can you tell me the formulary review cycle?", "completion": "The formulary committee reviews every drug class every 12 months.", "source": "formulary_policy.md"}
+{"prompt": "Please confirm the first-line antibiotic for community pneumonia.", "completion": "First-line is Amoxatrin 1 g three times daily for 5 days.", "source": "formulary_antibiotics.md"}

@@ -19,7 +19,7 @@ and recommends retrieval over versioned documents with effective dates.
 | **Total** | **157** |
 
 ```bash
-trainjudge diagnose --dataset demo/bfsi_loan_faq/data.jsonl --model Qwen3-0.6B \
+trainjudge diagnose --dataset demo/domains/bfsi/loan_faq/data.jsonl --model Qwen3-0.6B \
   --goal "answer customer questions about our loan and FD interest rates and charges"
-python demo/bfsi_loan_faq/generate.py   # regenerate (output is identical on every run)
+python demo/domains/bfsi/loan_faq/generate.py   # regenerate (output is identical on every run)
 ```

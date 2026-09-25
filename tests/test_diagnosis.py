@@ -49,7 +49,7 @@ def test_policy_demo_is_a_knowledge_gap():
 
 
 def test_bfsi_transactions_is_a_format_gap_with_sensitive_data():
-    d = run("bfsi_transactions", "categorize bank transaction narrations into our category JSON")
+    d = run("domains/bfsi/transactions", "categorize bank transaction narrations into our category JSON")
     assert d.classification == FORMAT
     assert d.profile.output_shape == "json"
     assert d.domain.name == "bfsi"
@@ -67,7 +67,7 @@ def test_bfsi_transactions_is_a_format_gap_with_sensitive_data():
 
 def test_bfsi_loan_faq_is_a_knowledge_gap_with_regulated_facts():
     d = run(
-        "bfsi_loan_faq",
+        "domains/bfsi/loan_faq",
         "answer customer questions about our loan and FD interest rates and charges",
     )
     assert d.classification == KNOWLEDGE
@@ -79,7 +79,9 @@ def test_bfsi_loan_faq_is_a_knowledge_gap_with_regulated_facts():
 
 
 def test_cost_goal_is_a_distillation_candidate():
-    d = run("bfsi_transactions", "we call an expensive API model for this; distill to a cheaper model")
+    d = run(
+        "domains/bfsi/transactions", "we call an expensive API model for this; distill to a cheaper model"
+    )
     assert d.classification == COST
     assert d.fine_tune_recommended
     assert d.secondary == FORMAT
@@ -125,7 +127,7 @@ def test_no_signal_is_unclear(tmp_path):
 
 
 def test_high_stakes_bfsi_goal_warns():
-    d = run("bfsi_loan_faq", "fine-tune it to approve or reject personal loan applications")
+    d = run("domains/bfsi/loan_faq", "fine-tune it to approve or reject personal loan applications")
     assert d.high_stakes_terms == ["approve", "reject"]
     assert "human in the loop" in " ".join(format_diagnosis(d).split())
 

@@ -50,8 +50,8 @@ section). To add one, say for healthcare:
 2. Register it in `_load_packs()` in `src/trainjudge/domains/__init__.py`.
 3. Add tests showing it's detected from a goal, isn't detected on the other demos, and
    produces its notes.
-4. Add two demo datasets under `demo/`, each with a `generate.py`: one where fine-tuning
-   fits and one where it doesn't.
+4. Add a `FinetuneCase` and a `RetrievalCase` for the domain in `demo/domains/generate.py`,
+   run it, and add both demos to the table in `tests/test_demo_datasets.py`.
 
 Keep sensitive-data detectors in `src/trainjudge/pii.py` rather than in a pack, so every
 dataset is scanned whatever its domain. Compliance pointers should name the rule, not

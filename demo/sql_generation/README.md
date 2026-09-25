@@ -19,6 +19,8 @@ SQLite database and must return rows.
 | **Total** | **1,830** |
 
 ```bash
+trainjudge diagnose --dataset demo/sql_generation/data.jsonl --model Qwen3-0.6B \
+  --goal "improve SQL generation for our shop database"
 trainjudge audit demo/sql_generation/data.jsonl
 python demo/sql_generation/generate.py   # regenerate
 ```
