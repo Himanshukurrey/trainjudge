@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml"><img src="https://github.com/Himanshukurrey/trainjudge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.2.1-green.svg" alt="Version 0.2.1"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.3.0-green.svg" alt="Version 0.3.0"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Apache 2.0 license"></a>
   <a href="#training"><img src="https://img.shields.io/badge/training-MLX%20%C2%B7%20CUDA%20%C2%B7%20CPU-black.svg" alt="Training with MLX, CUDA or CPU"></a>
@@ -116,8 +116,8 @@ Pick the extra for your machine:
 
 | Machine | Install | Training runs on |
 |---|---|---|
-| Apple Silicon Mac | `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"` | MLX (fastest on a Mac) |
-| Windows or Linux with an NVIDIA GPU | install [PyTorch with CUDA](https://pytorch.org/get-started/locally/), then `pip install "trainjudge[cuda] @ git+https://github.com/Himanshukurrey/trainjudge"` | PyTorch on CUDA (verified on an NVIDIA T4) |
+| Apple Silicon Mac | `pip install "trainjudge[mlx]"` | MLX (fastest on a Mac) |
+| Windows or Linux with an NVIDIA GPU | install [PyTorch with CUDA](https://pytorch.org/get-started/locally/), then `pip install "trainjudge[cuda]"` | PyTorch on CUDA (verified on an NVIDIA T4) |
 | No GPU | [the Colab notebook](notebooks/trainjudge_colab.ipynb) runs everything on a free NVIDIA T4, or install `[cuda]` for a (slow) CPU run | PyTorch |
 
 `diagnose`, `audit` and `status` run anywhere with no extras. For development:
@@ -143,11 +143,17 @@ extension:
 The skill tells Claude to diagnose before training, ask before starting a long job, keep
 you posted with `trainjudge status` while it runs, and report the verdict as-is.
 
-### Using it from Codex and other agents
+### Using it from Codex, Cursor, Gemini CLI and other agents
 
-[AGENTS.md](AGENTS.md) at the repo root describes the same workflow for Codex and any
-agent that reads `AGENTS.md`. The engine is a plain CLI, so any agent that can run shell
-commands can use it.
+The engine is a plain CLI, so any agent that can run shell commands can use it. Each of
+these gives the agent the same workflow as the Claude Code skill:
+
+| Agent | Setup |
+|---|---|
+| Codex | Copy [skills/trainjudge/](skills/trainjudge/) into `~/.codex/skills/`, or add the "Using TrainJudge" section of [AGENTS.md](AGENTS.md) to your project's `AGENTS.md` |
+| Cursor | Copy [.cursor/rules/trainjudge.mdc](.cursor/rules/trainjudge.mdc) into your project's `.cursor/rules/` (Cursor applies it when you ask about fine-tuning) |
+| Gemini CLI | `gemini extensions install https://github.com/Himanshukurrey/trainjudge` ([gemini-extension.json](gemini-extension.json) loads the skill as context) |
+| Anything else that reads `AGENTS.md` | [AGENTS.md](AGENTS.md) |
 
 ## Quickstart
 
@@ -173,8 +179,8 @@ trainjudge status
 trainjudge diagnose --dataset <path> --model <name> --goal "<text>"
 trainjudge audit <path>
 trainjudge train --dataset <path> --model <name>
-trainjudge eval <run-dir> [--db <database>]      # --db for SQL tasks only
-trainjudge verify <run-dir> [--db <database>]
+trainjudge eval <run-dir> [--db <database>] [--scorer <file.py:func>]
+trainjudge verify <run-dir> [--db <database>] [--scorer <file.py:func>]
 trainjudge status [<run-dir>]
 ```
 
@@ -265,7 +271,7 @@ data (`--domain` forces one, or `--domain none` turns it off):
 | **Healthcare** | clinical guidelines, drug dosing, formularies, coverage | diagnosis, triage, prescribing, prior authorization | [clinical coding](demo/domains/healthcare/clinical_coding/) · [formulary Q&A](demo/domains/healthcare/formulary_faq/) |
 | **Legal** | case law, statutes, regulations by jurisdiction | legal advice, bail/parole, immigration, custody | [clause extraction](demo/domains/legal/clause_extraction/) · [statutes Q&A](demo/domains/legal/statutes_faq/) |
 | **E-commerce/retail** | prices, stock, promotions, catalog details | fraud flags, account/seller suspension, refund denial | [product attributes](demo/domains/ecommerce/product_attributes/) · [catalog Q&A](demo/domains/ecommerce/catalog_faq/) |
-| **Customer support** | help-center articles, policies, plans, SLAs | refund denial, account closure | [ticket triage](demo/domains/customer_support/ticket_triage/) · [help-center Q&A](demo/domains/customer_support/help_center_faq/) |
+| **Customer support** | help-center articles, policies, plans, SLAs | refund denial, account closure | [ticket triage](demo/domains/customer_support/ticket_triage/) · [intent routing](demo/domains/customer_support/intent_routing/) · [help-center Q&A](demo/domains/customer_support/help_center_faq/) |
 | **HR/recruiting** | benefits, pay bands, handbooks, employment law | candidate screening and ranking, termination | [resume parsing](demo/domains/hr/resume_parsing/) · [benefits Q&A](demo/domains/hr/benefits_faq/) |
 | **BFSI** | interest rates, charges, KYC rules, regulator circulars | loan/credit and claim decisions | [transactions](demo/domains/bfsi/transactions/) · [loan FAQ](demo/domains/bfsi/loan_faq/) |
 | **Education** | syllabi, exam dates, deadlines, admission rules | grading, admissions, misconduct findings | [question tagging](demo/domains/education/question_tagging/) · [course Q&A](demo/domains/education/course_faq/) |
@@ -363,10 +369,13 @@ detected from the gold completions (`--task` overrides it):
 |---|---|---|---|
 | **SQL** | SQL queries | Execution accuracy: the query returns the same rows as the gold query | Lenient (extra columns allowed) |
 | **JSON** | JSON objects | Exact match: every gold field is right | Field-level accuracy, and accuracy per field |
+| **Label** | Short labels from a small repeating set (intents, categories, sentiment) | Accuracy: the right label | Macro-F1, per-label F1 and the most common mix-ups |
+| **Custom** | Anything else, with `--scorer` | Your function says the answer is right | Mean score (partial credit) |
 
 ```bash
 trainjudge eval <run-dir> --db demo/sql_generation/shop.sql   # SQL: needs the database
-trainjudge eval <run-dir>                                      # JSON: nothing else needed
+trainjudge eval <run-dir>                                      # JSON and labels: nothing else needed
+trainjudge eval <run-dir> --scorer my_scorer.py              # anything else: your scorer
 ```
 
 **SQL:** each generated query runs read-only against the database, with a 5-second
@@ -381,8 +390,33 @@ fine-tune demo of every domain pack: clinical coding, clause extraction, product
 attributes, ticket triage, resume parsing, transaction categorization and question
 tagging.
 
+**Labels:** the label is pulled out of the answer, tolerating quotes, bold, a `Label:`
+prefix, or a sentence around it when exactly one known label appears (so hedging between
+two labels doesn't count). Macro-F1 weights every label equally, so a model that only
+gets the common labels right doesn't look better than it is. See the
+[intent routing demo](demo/domains/customer_support/intent_routing/).
+
+**Custom scorers** cover everything else: prose answers, code, numbers within a
+tolerance, a rubric. Write a function and pass it with `--scorer path/to/scorer.py:func`
+(`func` defaults to `score`):
+
+```python
+def score(prompt: str, output: str, gold: str) -> bool | dict:
+    # True/False, or {"correct": bool, "score": 0.0-1.0, "reason": "shown in the report"}
+    return {"correct": ..., "score": ..., "reason": ...}
+```
+
+Add a fourth parameter named `row` to get the whole test row (for extra reference
+fields). The scorer is recorded in the run, so later `eval`/`verify` calls reuse it, and
+its file hash is part of every saved result, so editing the scorer re-scores instead of
+reusing stale evals. A scorer that fails on every example stops the eval instead of
+reporting 0%. `--scorer trainjudge.scorers.key_facts` is a built-in starting point for
+prose ([source](src/trainjudge/scorers/key_facts.py), copy it to adapt): every number and most content words of the gold answer must appear. The
+scorer runs as ordinary Python with your permissions, and the verdict is only as honest
+as it is.
+
 The base model's results only depend on the model, the test split, decoding and (for
-SQL) the database, so they're cached in `trainjudge-runs/.baseline-cache/` and reused by
+SQL) the database or (for custom tasks) the scorer, so they're cached in `trainjudge-runs/.baseline-cache/` and reused by
 every later run that shares them. A second experiment on the same data skips the
 baseline entirely. `verify --rerun` regenerates everything.
 
@@ -456,9 +490,10 @@ trainjudge-runs/2026-09-24-sql_generation-3
   doesn't replace a proper data-protection review.
 - The audit's low-quality checks are heuristics too. They can miss subtly wrong answers
   and can flag legitimate ones.
-- `eval` and `verify` score SQL (execution accuracy) and JSON objects (exact match).
-  Free-form prose answers, such as the retrieval demos, can be diagnosed and trained but
-  not scored automatically yet.
+- `eval` and `verify` score SQL, JSON objects and labels automatically. Free-form prose
+  answers, such as the retrieval demos, need a `--scorer`, and a keyword-style scorer
+  like the bundled example can't tell a right answer from a wrong one that uses the same
+  words.
 - Evaluation uses a held-out split of your own dataset. If the dataset is templated, the
   test split shares its templates, and real-world accuracy will be lower.
 
@@ -469,13 +504,13 @@ trainjudge-runs/2026-09-24-sql_generation-3
   mention of TrainJudge, Claude loaded the skill, checked the CLI was installed, ran
   `diagnose`, reported the knowledge gap with its evidence and asked before training.
 - The marketplace install path (`/plugin marketplace add`) hasn't been exercised yet.
-- `AGENTS.md` follows the same workflow but hasn't been tested with Codex yet.
+- `AGENTS.md`, the Cursor rule and the Gemini extension follow the same workflow but
+  haven't been tested in Codex, Cursor or Gemini CLI yet.
 
 ## Roadmap
 
 - A retrieval-grounded QA eval, so the "don't fine-tune" demos can show fine-tuning vs
   retrieval side by side
-- `gemini-extension.json` and Cursor rules
 - Hugging Face Jobs as a cloud training backend; DPO/GRPO beyond SFT/LoRA
 - 4-bit (QLoRA) loading on CUDA for larger models on small GPUs
 

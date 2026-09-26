@@ -4,6 +4,7 @@ Every domain gets two demos:
 
 - a "fine-tune" case: a structured-output task (text -> JSON) that fits
   fine-tuning, with some domain-typical sensitive identifiers planted in it
+  (customer support also has a label case: text -> one intent label)
 - a "retrieval" case: Q&A that recalls facts from the domain's documents,
   facts that change, so diagnosis should recommend retrieval instead
 
@@ -47,8 +48,8 @@ class FinetuneCase:
     title: str
     goal: str
     instruction: str
-    make_example: object  # (rng) -> (input_text, output_dict)
-    make_pii_example: object  # (rng, i) -> (input_text, output_dict)
+    make_example: object  # (rng) -> (input_text, output); a dict becomes JSON, a str is the label
+    make_pii_example: object  # (rng, i) -> (input_text, output)
     # 600 clean rows -> a ~60-example held-out test split, enough for a real gain to be significant.
     n_clean: int = 600
     n_pii: int = 6
@@ -234,6 +235,51 @@ def support_ticket_with_pii(rng: random.Random, i: int) -> tuple[str, dict]:
     return text + contact, out
 
 
+INTENTS = [
+    ("order_status", "Where is my order {order}? It still hasn't arrived."),
+    ("order_status", "Tracking for {order} hasn't updated in four days."),
+    ("order_status", "When will the {item} I ordered ship?"),
+    ("refund_request", "The {item} arrived broken. I'd like my money back."),
+    ("refund_request", "I returned the {item} last week, please refund me."),
+    ("refund_request", "You sent me the wrong {item}; I want a refund, not a replacement."),
+    ("billing_dispute", "I was charged twice for order {order}."),
+    ("billing_dispute", "There's a charge on my card I don't recognize from your store."),
+    ("billing_dispute", "The price I paid for the {item} is higher than the checkout page showed."),
+    ("account_access", "I can't sign in; the reset email never comes."),
+    ("account_access", "My account got locked after too many password attempts."),
+    ("account_access", "I changed my phone and can't get the login code anymore."),
+    ("cancellation", "Please cancel order {order} before it ships."),
+    ("cancellation", "Cancel my monthly {item} subscription."),
+    ("address_change", "Can you send order {order} to my office instead?"),
+    ("address_change", "I moved; please update the delivery address for {order}."),
+    ("product_question", "Does the {item} come with a warranty?"),
+    ("product_question", "Is the {item} available in a larger size?"),
+    ("complaint", "Your courier was rude and left the {item} in the rain."),
+    ("complaint", "This is the third time support ignored my emails about the {item}."),
+]
+ITEMS = ["blender", "desk lamp", "running shoes", "coffee grinder", "yoga mat", "headphones",
+         "rain jacket", "phone case", "air fryer", "backpack", "tea sampler", "office chair"]  # fmt: skip
+OPENERS = ["", "Hi, ", "Hello team, ", "Quick one: ", "Hey, "]
+CLOSERS = ["", " Thanks.", " Please help.", " Thank you!", " Appreciate it."]
+
+
+def intent_message(rng: random.Random) -> tuple[str, str]:
+    intent, text = rng.choice(INTENTS)
+    order = f"#{rng.randint(10000, 99999)}"
+    text = rng.choice(OPENERS) + text.format(order=order, item=rng.choice(ITEMS)) + rng.choice(CLOSERS)
+    return text, intent
+
+
+def intent_message_with_pii(rng: random.Random, i: int) -> tuple[str, str]:
+    text, intent = intent_message(rng)
+    contact = [
+        f" Email me at {rng.choice(['kai', 'noor', 'ben', 'ines'])}.{rng.randint(10, 99)}@mailhub.fake.",
+        " Call me on +44 20 7946 0132.",
+        f" My number is (415) 555-01{rng.randint(10, 99)}.",
+    ][i % 3]
+    return text + contact, intent
+
+
 # --- HR ------------------------------------------------------------------------
 
 TITLES = [
@@ -327,6 +373,16 @@ FINETUNE_CASES = [
                  "tag exam questions with subject, topic and difficulty in our JSON format",
                  "Tag this exam question. Reply with JSON: subject, topic, difficulty.",
                  exam_question, no_pii, n_pii=0),
+]  # fmt: skip
+
+# Built after the retrieval cases, so adding them left the other demos' data unchanged.
+LABEL_CASES = [
+    FinetuneCase("customer_support", "intent_routing", "Customer message intent routing",
+                 "route customer messages to one of our support intents",
+                 "Route this customer message to one intent. Reply with only the intent label: "
+                 "order_status, refund_request, billing_dispute, account_access, cancellation, "
+                 "address_change, product_question, complaint.",
+                 intent_message, intent_message_with_pii, pii_kinds={"email address": 2, "phone number": 4}),
 ]  # fmt: skip
 
 RETRIEVAL_CASES = [
@@ -521,7 +577,8 @@ def build_finetune(case: FinetuneCase, rng: random.Random) -> None:
     def add(text, out):
         if text not in seen:
             seen.add(text)
-            clean.append({"prompt": f"{case.instruction}\nInput: {text}", "completion": json.dumps(out)})
+            completion = out if isinstance(out, str) else json.dumps(out)
+            clean.append({"prompt": f"{case.instruction}\nInput: {text}", "completion": completion})
             return True
         return False
 
@@ -583,6 +640,9 @@ def main() -> None:
         print(f"wrote {case.domain}/{case.name}")
     for case in RETRIEVAL_CASES:
         build_retrieval(case, rng)
+        print(f"wrote {case.domain}/{case.name}")
+    for case in LABEL_CASES:
+        build_finetune(case, rng)
         print(f"wrote {case.domain}/{case.name}")
 
 

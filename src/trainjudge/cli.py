@@ -25,6 +25,20 @@ from trainjudge.status import StatusTracker
 from trainjudge.textutil import format_duration
 
 NOTIFY_HELP = "Show a desktop notification (macOS) when the command finishes or fails."
+TASK_OPTION = click.option(
+    "--task",
+    type=click.Choice(["auto", *tasks.TASKS]),
+    default="auto",
+    show_default=True,
+    help="What to score: SQL execution accuracy, JSON exact match, label accuracy, or a custom "
+    "scorer (auto: detect from the test split, or custom when --scorer is given).",
+)
+SCORER_OPTION = click.option(
+    "--scorer",
+    help="Score with your own function: path/to/scorer.py[:func] or package.module[:func] "
+    "(func defaults to `score`). It gets (prompt, output, gold) and returns True/False or "
+    "{'correct': bool, 'score': 0-1, 'reason': str}. Implies --task custom.",
+)
 
 
 @click.group()
@@ -252,13 +266,8 @@ def train(
     help="SQL tasks only: SQLite database (.sqlite/.db) or SQL script (.sql) to run queries "
     "against. Defaults to the one recorded by a previous eval of this run.",
 )
-@click.option(
-    "--task",
-    type=click.Choice(["auto", "sql", "json"]),
-    default="auto",
-    show_default=True,
-    help="What to score: SQL execution accuracy or JSON exact match (auto: detect from the test split).",
-)
+@TASK_OPTION
+@SCORER_OPTION
 @click.option(
     "--target",
     type=click.Choice(["baseline", "finetuned", "both"]),
@@ -275,6 +284,7 @@ def eval_command(
     run_dir: str,
     db_path: str | None,
     task: str,
+    scorer: str | None,
     target: str,
     limit: int | None,
     max_tokens: int,
@@ -290,7 +300,7 @@ def eval_command(
     except FileNotFoundError as e:
         raise click.ClickException(f"{run} has no run.json; is it a trainjudge run?") from e
     try:
-        task, db = evaluation.resolve_task(run, task, Path(db_path) if db_path else None)
+        spec = evaluation.resolve_task(run, task, Path(db_path) if db_path else None, scorer)
     except runs.RunError as e:
         raise click.UsageError(str(e)) from e
     if reason := backends.unavailable_reason(backends.backend_of(record)):
@@ -301,8 +311,9 @@ def eval_command(
     labels = {"baseline": "Baseline (no fine-tuning)", "finetuned": "Fine-tuned"}
     log = (lambda *a, **k: None) if as_json else click.echo
     rows = len(evaluation.test_rows(run, limit))
-    log(f"{tasks.TASKS[task].label} on {rows:,} held-out test examples")
-    log(f"  Database: {db}\n" if db else "")
+    log(f"{tasks.TASKS[spec.name].label} on {rows:,} held-out test examples")
+    log(f"  Database: {spec.db_path}\n" if spec.db_path else "")
+    log(f"  Scorer: {spec.scorer.spec}\n" if spec.scorer else "")
 
     results = {}
     with StatusTracker(run, "eval", notify_on_finish=notify) as tracker:
@@ -315,7 +326,7 @@ def eval_command(
                 tracker.progress(done, total)
 
             try:
-                result = evaluation.evaluate_target(run, t, db, decoding, limit, on_progress, task=task)
+                result = evaluation.evaluate_target(run, t, None, decoding, limit, on_progress, task=spec)
             except runs.RunError as e:
                 raise click.ClickException(str(e)) from e
             results[t] = result
@@ -344,13 +355,8 @@ def eval_command(
     type=click.Path(exists=True, dir_okay=False),
     help="SQL tasks only: the database queries run against (defaults to the one recorded for this run).",
 )
-@click.option(
-    "--task",
-    type=click.Choice(["auto", "sql", "json"]),
-    default="auto",
-    show_default=True,
-    help="What to score: SQL execution accuracy or JSON exact match (auto: detect from the test split).",
-)
+@TASK_OPTION
+@SCORER_OPTION
 @click.option(
     "--min-improvement",
     type=float,
@@ -372,6 +378,7 @@ def verify(
     run_dir: str,
     db_path: str | None,
     task: str,
+    scorer: str | None,
     min_improvement: float,
     regression_tolerance: float,
     rerun: bool,
@@ -394,6 +401,7 @@ def verify(
                 log=click.echo,
                 tracker=tracker,
                 task=task,
+                scorer=scorer,
             )
         except runs.RunError as e:
             raise click.ClickException(str(e)) from e

@@ -103,6 +103,20 @@ def _json_answer(e: dict) -> str:
     return text + (f" ({', '.join(problems)})" if problems else "")
 
 
+def _short(text: str | None, limit: int = 200) -> str:
+    text = " ".join((text or "").split())
+    return text[:limit] + ("…" if len(text) > limit else "")
+
+
+def _label_answer(e: dict) -> str:
+    return f"`{e['predicted']}`" if e.get("predicted") else "_no answer_"
+
+
+def _custom_answer(e: dict) -> str:
+    text = f"`{_short(e['output'])}`" if e["output"].strip() else "_empty_"
+    return text + (f" ({_short(e['reason'], 120)})" if e.get("reason") else "")
+
+
 def _flipped(baseline_eval: dict, finetuned_eval: dict) -> tuple[list, list]:
     base = {e["prompt"]: e for e in baseline_eval["examples"]}
     gained, lost = [], []
@@ -123,6 +137,12 @@ def _example_block(pairs: list, title: str, task: str = tasks.SQL) -> list[str]:
         if task == tasks.SQL:
             gold = f"`{base['gold_sql']}`"
             answers = [f"`{' '.join(e['sql'].split())}`" if e["sql"] else "_no SQL_" for e in (base, tuned)]
+        elif task == tasks.LABEL:
+            gold = f"`{base['gold']}`"
+            answers = [_label_answer(e) for e in (base, tuned)]
+        elif task == tasks.CUSTOM:
+            gold = f"`{_short(base['gold'])}`"
+            answers = [_custom_answer(e) for e in (base, tuned)]
         else:
             gold = f"`{_compact(base['gold'])}`"
             answers = [_json_answer(e) for e in (base, tuned)]
@@ -152,6 +172,15 @@ def _regression_examples(baseline_reg: dict, finetuned_reg: dict) -> list[str]:
     if len(broken) > MAX_EXAMPLES:
         lines.append(f"- _…and {len(broken) - MAX_EXAMPLES} more in `eval/regression_finetuned.json`._")
     return lines + [""]
+
+
+def _verify_command(evaluation: dict) -> str:
+    command = "trainjudge verify <run-dir>"
+    if evaluation.get("database"):
+        command += f" --db {shlex.quote(evaluation['database']['path'])}"
+    if evaluation.get("scorer"):
+        command += f" --scorer {shlex.quote(evaluation['scorer']['spec'])}"
+    return command
 
 
 def experiment_report(
@@ -212,6 +241,16 @@ def experiment_report(
         lines += ["", "| Field | Baseline | Fine-tuned |", "|---|---|---|"]
         for name, value in finetuned_eval["per_field"].items():
             lines.append(f"| `{name}` | {_pct(base_fields.get(name))} | {_pct(value)} |")
+    if finetuned_eval.get("per_label"):
+        base_labels = baseline_eval.get("per_label", {})
+        lines += ["", "| Label | Test rows | Baseline F1 | Fine-tuned F1 |", "|---|---|---|---|"]
+        for name, stats in finetuned_eval["per_label"].items():
+            base_f1 = (base_labels.get(name) or {}).get("f1")
+            lines.append(f"| `{name}` | {stats['support']} | {_pct(base_f1)} | {_pct(stats['f1'])} |")
+        if finetuned_eval.get("confusions"):
+            lines += ["", "Most common fine-tuned mistakes (gold → predicted): " + ", ".join(
+                f"`{c['gold']}` → `{c['predicted']}` ×{c['count']}" for c in finetuned_eval["confusions"][:5]
+            ) + "."]  # fmt: skip
     lines += [
         "",
         "## Regression check (held-out general tasks)",
@@ -273,16 +312,20 @@ def experiment_report(
             if baseline_eval.get("database")
             else []
         ),
+        *(
+            [
+                f"- Scorer: `{baseline_eval['scorer']['spec']}` (sha256 "
+                f"`{(baseline_eval['scorer']['sha256'] or '')[:12]}…`)"
+            ]
+            if baseline_eval.get("scorer")
+            else []
+        ),
         "",
         "## Reproduce",
         "",
         "```bash",
         reproduce_command(run),
-        (
-            f"trainjudge verify <run-dir> --db {baseline_eval['database']['path']}"
-            if baseline_eval.get("database")
-            else "trainjudge verify <run-dir>"
-        ),
+        _verify_command(baseline_eval),
         "```",
         "",
         "## Caveats",
@@ -302,6 +345,7 @@ def model_card(run: dict, v: Verdict, run_dir: str, task_name: str = tasks.SQL) 
     task = tasks.TASKS[task_name]
     cfg = run["config"]
     prep = run["prep"]
+    torch_run = (run.get("backend") or {}).get("name") == "torch"
     status = {
         IMPROVED: "Verified: improved on held-out data with no regressions.",
         REGRESSED: "⚠ Not recommended for deployment: the task improved, but general capability regressed.",
@@ -310,10 +354,10 @@ def model_card(run: dict, v: Verdict, run_dir: str, task_name: str = tasks.SQL) 
     lines = [
         "---",
         f"base_model: {run['model']}",
-        "library_name: mlx",
+        f"library_name: {'peft' if torch_run else 'mlx'}",
         "tags:",
         "  - lora",
-        "  - mlx",
+        f"  - {'peft' if torch_run else 'mlx'}",
         f"  - {task.card_task_type}",
         "  - trainjudge",
         "model-index:",
@@ -361,9 +405,22 @@ def model_card(run: dict, v: Verdict, run_dir: str, task_name: str = tasks.SQL) 
         "## Usage",
         "",
         "```python",
-        "from mlx_lm import load, generate",
-        "",
-        f'model, tokenizer = load("{run["model"]}", adapter_path="{run_dir}/adapters")',
+        *(
+            [
+                "from peft import PeftModel",
+                "from transformers import AutoModelForCausalLM, AutoTokenizer",
+                "",
+                f'tokenizer = AutoTokenizer.from_pretrained("{run["model"]}")',
+                f'model = PeftModel.from_pretrained(AutoModelForCausalLM.from_pretrained("{run["model"]}"), '
+                f'"{run_dir}/adapters")',
+            ]
+            if torch_run
+            else [
+                "from mlx_lm import load, generate",
+                "",
+                f'model, tokenizer = load("{run["model"]}", adapter_path="{run_dir}/adapters")',
+            ]
+        ),
         "```",
         "",
         "## Limitations",

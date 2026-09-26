@@ -1,0 +1,34 @@
+---
+description: Use when the user asks to fine-tune, LoRA-train or distill a model, asks whether they should fine-tune, or asks whether a fine-tuned model or adapter is better than its base model.
+alwaysApply: false
+---
+
+# TrainJudge: diagnose before training, verify after
+
+Use the `trainjudge` CLI (`pip install "trainjudge[mlx]"` on Apple Silicon,
+`pip install "trainjudge[cuda]"` with an NVIDIA GPU; `diagnose` and `audit` run anywhere).
+Check it's installed with `trainjudge --version`.
+
+1. **Diagnose first.** `trainjudge diagnose --dataset <path> --model <model> --goal "<goal>"`.
+   KNOWLEDGE GAP (use retrieval) or PROMPT-ENGINEERING GAP (fix the prompt): tell the user
+   TrainJudge recommends not fine-tuning, and only continue if they explicitly ask.
+   FORMAT/BEHAVIOR or COST/LATENCY GAP: ask before training, because it takes a while.
+2. **Sensitive data.** If `train` refuses because the audit found card numbers, national IDs,
+   emails, phones or similar, tell the user and offer `--mask-sensitive`. Never add
+   `--allow-sensitive-data` unless the user asks for it.
+3. **Train.** `trainjudge train --dataset <path> --model <model> --goal "<goal>"`; add
+   `--replay 200` when general skills matter.
+4. **Verify.** `trainjudge verify <run-dir>`. SQL (add `--db <database>`), JSON and label
+   tasks are detected automatically. For anything else, write a scoring function with the
+   user, `score(prompt, output, gold)` returning True/False or
+   `{"correct": bool, "score": 0-1, "reason": str}`, and pass `--scorer path/to/scorer.py:score`.
+   Never write a scorer that always passes.
+5. **Report the verdict as-is.** IMPROVED: it worked. REGRESSED: the task improved but general
+   capability broke; not ready to deploy. REJECTED: no real improvement, whatever the loss did.
+   Never claim improvement from training loss alone. Point to `EXPERIMENT_REPORT.md` and
+   `MODEL_CARD.md` in the run folder.
+
+**Long jobs: keep the user informed.** Run `train` and `verify` in the background, then
+`trainjudge status <run-dir> --watch --milestones`, which prints one line per milestone and
+exits when the job ends. Relay each milestone with what's next and the ETA; report failures
+right away.

@@ -32,11 +32,12 @@ def verify_run(
     generate: Callable[..., list[str]] | None = None,
     tracker: StatusTracker | None = None,
     task: str | None = None,
+    scorer: str | None = None,
 ) -> VerifyResult:
     run = runs.read_run_json(run_dir)
     if run.get("status") != "trained":
         raise runs.RunError(f"{run_dir} hasn't finished training (status: {run.get('status')})")
-    task_name, db_path = evaluation.resolve_task(run_dir, task, db_path)
+    spec = evaluation.resolve_task(run_dir, task, db_path, scorer)
 
     def progress(done: int, total: int) -> None:
         log(f"  generated {done:,}/{total:,}")
@@ -53,7 +54,7 @@ def verify_run(
     for target in evaluation.TARGETS:
         label = "baseline" if target == evaluation.BASELINE else "fine-tuned"
         cached = None if rerun else evaluation.load_eval(run_dir, target)
-        if cached is not None and _usable(cached) and cached.get("task", "sql") == task_name:
+        if cached is not None and _usable(cached) and evaluation.matches_task(cached, spec):
             log(f"Using saved {label} task eval ({cached['accuracy']:.1%}).")
             task_evals[target] = cached
         else:
@@ -61,10 +62,9 @@ def verify_run(
             task_evals[target] = evaluation.evaluate_target(
                 run_dir,
                 target,
-                db_path,
                 on_progress=progress,
                 generate=generate,
-                task=task_name,
+                task=spec,
                 use_cache=not rerun,
             )
             if task_evals[target].get("cached_from"):
@@ -114,7 +114,7 @@ def verify_run(
         run_dir / "EXPERIMENT_REPORT.md",
         run_dir / "eval_results.json",
     ]
-    artifacts[0].write_text(reports.model_card(run, v, str(run_dir), task_name), encoding="utf-8")
+    artifacts[0].write_text(reports.model_card(run, v, str(run_dir), spec.name), encoding="utf-8")
     artifacts[1].write_text(
         reports.experiment_report(
             run,

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.0 (2026-09-26)
+
+### Verify any task, not just SQL and JSON
+
+- **Label eval**: classification-style tasks (intents, categories, sentiment, tags) are
+  detected from the test split and scored by label accuracy, with macro-F1, per-label F1
+  and the most common mix-ups in the report. Labels are pulled out of chatty answers
+  ("The intent is refund_request.") but hedging between two labels doesn't count.
+- **Custom scorers**: `eval` and `verify --scorer path/to/scorer.py:func` score any task
+  with your own function, returning True/False or `{"correct", "score", "reason"}`. The
+  scorer is recorded in the run and its file hash is part of every saved result, so
+  editing it re-scores. `--scorer trainjudge.scorers.key_facts` is a built-in example
+  for prose answers.
+- **Intent routing demo** (`demo/domains/customer_support/intent_routing`): 600 labelled
+  customer messages. On Qwen3-0.6B (MLX, 150 steps), fine-tuning took label accuracy
+  from 6.7% to 100% but collapsed general answers to one word: REGRESSED, with format
+  compliance 100% → 0%. `--replay 200` recovered most of it (format 89%) but
+  instruction-following still dropped 77% → 53%, so it stayed REGRESSED.
+
+### More agents
+
+- **Cursor rule** (`.cursor/rules/trainjudge.mdc`) and a **Gemini CLI extension**
+  (`gemini-extension.json`, loading the skill as context). `AGENTS.md` and the skill now
+  install from PyPI and explain custom scorers. A test keeps all of them in sync.
+
+### Fixes
+
+- Model cards for PyTorch runs say `peft` and show transformers + peft usage instead of
+  MLX.
+
 ## 0.2.1 (2026-09-26)
 
 ### Fixes

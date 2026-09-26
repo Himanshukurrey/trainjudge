@@ -33,6 +33,8 @@ DEMOS = [
      KNOWLEDGE, "ecommerce"),
     ("domains/customer_support/ticket_triage", FINETUNE, {"phone number": 4, "email address": 2},
      "triage support tickets into category, priority and team as JSON", FORMAT, "customer_support"),
+    ("domains/customer_support/intent_routing", FINETUNE, {"phone number": 4, "email address": 2},
+     "route customer messages to one of our support intents", FORMAT, "customer_support"),
     ("domains/customer_support/help_center_faq", RETRIEVAL, {},
      "answer customer questions from our help center articles", KNOWLEDGE, "customer_support"),
     ("domains/hr/resume_parsing", FINETUNE, {"date of birth": 3, "email address": 3},

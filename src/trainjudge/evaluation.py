@@ -14,8 +14,9 @@ from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import NamedTuple
 
-from trainjudge import backends, eval_json, eval_sql, regression_check, runs, tasks
+from trainjudge import backends, eval_custom, eval_json, eval_label, eval_sql, regression_check, runs, tasks
 from trainjudge.backend_base import DecodingConfig
 
 CACHE_DIR = ".baseline-cache"
@@ -58,11 +59,22 @@ def _save_cached(path: Path, result: dict) -> None:
     path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
 
+class TaskSpec(NamedTuple):
+    name: str
+    db_path: Path | None = None  # SQL only
+    scorer: eval_custom.Scorer | None = None  # custom only
+
+
 def resolve_task(
-    run_dir: Path, task: str | None = None, db_path: Path | None = None
-) -> tuple[str, Path | None]:
-    """The task to score (given, recorded by an earlier eval, or detected) and its database."""
+    run_dir: Path, task: str | None = None, db_path: Path | None = None, scorer: str | None = None
+) -> TaskSpec:
+    """The task to score (given, recorded by an earlier eval, or detected) and what it needs.
+
+    Passing a scorer implies the custom task.
+    """
     recorded = runs.read_run_json(run_dir).get("task") or {}
+    if task in (None, "auto") and scorer:
+        task = tasks.CUSTOM
     if task in (None, "auto"):
         task = recorded.get("type")
     if task in (None, "auto"):
@@ -72,13 +84,38 @@ def resolve_task(
             raise runs.RunError(str(e)) from e
     if task not in tasks.TASKS:
         raise runs.RunError(f"unknown task {task!r}; choose from {', '.join(tasks.TASKS)}")
+    if scorer and task != tasks.CUSTOM:
+        raise runs.RunError(f"--scorer only applies to --task custom, not {task}")
     if db_path is None and recorded.get("database"):
         db_path = Path(recorded["database"])
     if tasks.TASKS[task].needs_db and (db_path is None or not db_path.is_file()):
         raise runs.RunError(
             "the SQL eval needs --db: the database (or .sql script) queries should run against"
         )
-    return task, db_path if tasks.TASKS[task].needs_db else None
+    loaded = None
+    if task == tasks.CUSTOM:
+        spec = scorer or recorded.get("scorer")
+        if not spec:
+            raise runs.RunError(
+                "the custom task needs --scorer path/to/scorer.py:score (a function that "
+                "returns whether each answer is right)"
+            )
+        try:
+            loaded = eval_custom.load(spec)
+        except eval_custom.ScorerError as e:
+            raise runs.RunError(str(e)) from e
+    return TaskSpec(task, db_path if tasks.TASKS[task].needs_db else None, loaded)
+
+
+def matches_task(result: dict, spec: TaskSpec) -> bool:
+    """Whether a saved eval was scored the way `spec` would score it."""
+    if result.get("task", tasks.SQL) != spec.name:
+        return False
+    if spec.scorer is not None:
+        return (result.get("scorer") or {}).get("sha256") == spec.scorer.sha256 and (
+            result.get("scorer") or {}
+        ).get("spec") == spec.scorer.spec
+    return True
 
 
 def evaluate_target(
@@ -89,13 +126,14 @@ def evaluate_target(
     limit: int | None = None,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
     generate: Callable[..., list[str]] | None = None,
-    task: str | None = None,
+    task: str | TaskSpec | None = None,
     use_cache: bool = True,
+    scorer: str | None = None,
 ) -> dict:
     """Generate and score one target; write and return its eval record.
 
-    Baselines are reused from other runs with the same model, test split, decoding and
-    database unless `use_cache` is False.
+    Baselines are reused from other runs with the same model, test split, decoding,
+    database and scorer unless `use_cache` is False.
     """
     if target not in TARGETS:
         raise ValueError(f"unknown target {target!r}")
@@ -105,7 +143,8 @@ def evaluate_target(
         raise runs.RunError(f"no trained adapter in {adapter}; run `trainjudge train` first")
     generate = generate or backends.generator(record)
 
-    task, db_path = resolve_task(run_dir, task, db_path)
+    spec = task if isinstance(task, TaskSpec) else resolve_task(run_dir, task, db_path, scorer)
+    task, db_path = spec.name, spec.db_path
     rows = test_rows(run_dir, limit)
     decoding = decoding or DecodingConfig()
 
@@ -118,6 +157,7 @@ def evaluate_target(
             "limit": limit,
             "decoding": asdict(decoding),
             "database": runs.file_sha256(db_path) if db_path else None,
+            "scorer": spec.scorer.describe() if spec.scorer else None,
         })  # fmt: skip
         cached = _load_cached(cache) if use_cache else None
         if cached is not None:
@@ -127,7 +167,7 @@ def evaluate_target(
                 "cached_from": cached.get("cached_from") or cached.get("run"),
             }
             result["test_split"] = {**cached["test_split"], "path": str(run_dir / "data" / "test.jsonl")}
-            return _record_task_eval(run_dir, record, target, task, db_path, result)
+            return _record_task_eval(run_dir, record, target, spec, result)
 
     start = time.monotonic()
     outputs = generate(
@@ -137,10 +177,18 @@ def evaluate_target(
         decoding=decoding,
         on_progress=on_progress,
     )
-    report: eval_sql.EvalReport | eval_json.EvalReport
+    report: eval_sql.EvalReport | eval_json.EvalReport | eval_label.EvalReport | eval_custom.EvalReport
     if task == tasks.SQL:
         assert db_path is not None  # resolve_task requires one for SQL
         report = eval_sql.evaluate(eval_sql.Database(db_path), rows, outputs)
+    elif task == tasks.LABEL:
+        report = eval_label.evaluate(rows, outputs)
+    elif task == tasks.CUSTOM:
+        assert spec.scorer is not None  # resolve_task requires one for custom
+        try:
+            report = eval_custom.evaluate(spec.scorer, rows, outputs)
+        except eval_custom.ScorerError as e:
+            raise runs.RunError(str(e)) from e
     else:
         report = eval_json.evaluate(rows, outputs)
     result = {
@@ -163,15 +211,17 @@ def evaluate_target(
 
     if cache is not None:
         _save_cached(cache, result)
-    return _record_task_eval(run_dir, record, target, task, db_path, result)
+    return _record_task_eval(run_dir, record, target, spec, result)
 
 
-def _record_task_eval(run_dir: Path, record: dict, target: str, task: str, db_path, result: dict) -> dict:
+def _record_task_eval(run_dir: Path, record: dict, target: str, spec: TaskSpec, result: dict) -> dict:
     eval_dir = run_dir / "eval"
     eval_dir.mkdir(exist_ok=True)
     (eval_dir / f"{target}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
-    record["task"] = {"type": task, "database": str(db_path) if db_path else None}
+    record["task"] = {"type": spec.name, "database": str(spec.db_path) if spec.db_path else None}
+    if spec.scorer is not None:
+        record["task"]["scorer"] = spec.scorer.spec
     record.setdefault("evals", {})[target] = {
         "accuracy": result["accuracy"],
         "scored": result["scored"],

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trainjudge"
-version = "0.2.1"
+version = "0.3.0"
 description = "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
 readme = "README.md"
 license = "Apache-2.0"

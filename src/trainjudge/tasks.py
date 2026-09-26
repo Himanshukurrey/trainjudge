@@ -8,8 +8,13 @@ from dataclasses import dataclass
 
 SQL = "sql"
 JSON = "json"
+LABEL = "label"
+CUSTOM = "custom"
 
 _SQL_START_RE = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
+# A classification task: every gold answer is a short label from a set of at most this many.
+MAX_LABELS = 50
+MAX_LABEL_CHARS = 60
 
 
 @dataclass(frozen=True)
@@ -55,6 +60,35 @@ TASKS = {
             "differently still counts as wrong."
         ),
     ),
+    LABEL: TaskInfo(
+        name=LABEL,
+        metric="label_accuracy",
+        label="Label accuracy",
+        short_label="Accuracy (right label)",
+        secondary_label="Macro-F1",
+        needs_db=False,
+        card_task_type="text-classification",
+        card_metric_type="accuracy",
+        caveat=(
+            "Label accuracy compares the predicted label with the gold one after normalizing case "
+            "and whitespace. Labels are only as good as the gold data: a mislabelled test row "
+            "counts against a model that got it right."
+        ),
+    ),
+    CUSTOM: TaskInfo(
+        name=CUSTOM,
+        metric="custom_accuracy",
+        label="Custom scorer accuracy",
+        short_label="Accuracy (scorer says correct)",
+        secondary_label="Mean score",
+        needs_db=False,
+        card_task_type="text-generation",
+        card_metric_type="accuracy",
+        caveat=(
+            "Scored by a user-supplied function; the verdict is only as meaningful as that "
+            "function. Check its code before trusting the result."
+        ),
+    ),
 }
 METRIC_LABELS = {t.metric: t.label for t in TASKS.values()}
 
@@ -70,6 +104,19 @@ def _is_json_object(text: str) -> bool:
         return False
 
 
+def _looks_like_label(text: str) -> bool:
+    text = text.strip()
+    return bool(text) and "\n" not in text and len(text) <= MAX_LABEL_CHARS and len(text.split()) <= 4
+
+
+def looks_like_labels(completions: list[str]) -> bool:
+    """Short single-line answers drawn from a small, repeating set: a classification task."""
+    if not completions or sum(map(_looks_like_label, completions)) / len(completions) < 0.9:
+        return False
+    distinct = {" ".join(c.split()).casefold() for c in completions}
+    return 2 <= len(distinct) <= min(MAX_LABELS, len(completions) // 2)
+
+
 def detect(rows: list[dict]) -> str:
     """Pick the task type from the gold completions of a test split."""
     completions = [c for r in rows if isinstance(c := r.get("completion"), str)]
@@ -81,7 +128,10 @@ def detect(rows: list[dict]) -> str:
         return JSON
     if sql_share >= 0.8:
         return SQL
+    if looks_like_labels(completions):
+        return LABEL
     raise UnknownTask(
-        "no automatic eval for this task yet: `eval`/`verify` score SQL (execution accuracy) and "
-        "JSON objects (exact match). Pass --task to force one."
+        "no automatic eval for this task: `eval`/`verify` detect SQL (execution accuracy), JSON "
+        "objects (exact match) and labels (classification accuracy). For anything else, write a "
+        "scoring function and pass --scorer path/to/scorer.py:score."
     )

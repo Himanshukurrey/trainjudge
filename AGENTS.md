@@ -1,13 +1,13 @@
 # AGENTS.md
 
-Instructions for coding agents (Codex and others that read `AGENTS.md`).
+Instructions for coding agents (Codex, Cursor, Gemini CLI and others that read `AGENTS.md`).
 
 ## Using TrainJudge
 
 When the user asks to fine-tune, LoRA-train or distill a model, or asks whether
 a fine-tuned model is better than its base model, use the `trainjudge` CLI.
-Install it with `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`
-on an Apple Silicon Mac, or `[cuda]` on Windows/Linux with an NVIDIA GPU (install PyTorch with
+Install it with `pip install "trainjudge[mlx]"` on an Apple Silicon Mac, or
+`pip install "trainjudge[cuda]"` on Windows/Linux with an NVIDIA GPU (install PyTorch with
 CUDA first). `diagnose` and `audit` run anywhere; with no GPU, use
 `notebooks/trainjudge_colab.ipynb` on Colab.
 
@@ -24,7 +24,11 @@ CUDA first). `diagnose` and `audit` run anywhere; with no GPU, use
    user asks for it.
 3. **Train.** `trainjudge train --dataset <path> --model <model> --goal "<goal>"`.
    Add `--replay 200` when general skills matter.
-4. **Verify.** `trainjudge verify <run-dir>` (add `--db <database>` for SQL tasks).
+4. **Verify.** `trainjudge verify <run-dir>`. SQL, JSON and label (classification)
+   tasks are detected from the test split; add `--db <database>` for SQL. For any
+   other task (prose answers, code, numbers with tolerance), write a scoring
+   function and pass `--scorer path/to/scorer.py:score` (`--scorer trainjudge.scorers.key_facts` is a
+   built-in example for prose). Never write a scorer that just returns True.
 5. **Report the verdict as-is.** IMPROVED means it worked. REGRESSED means the
    task improved but general capability broke, so don't call it ready to
    deploy. REJECTED means it didn't really improve, whatever the loss did.

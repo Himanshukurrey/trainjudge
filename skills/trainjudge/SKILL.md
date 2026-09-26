@@ -13,8 +13,8 @@ be fine-tuned at all: facts belong in retrieval, and unclear instructions
 belong in the prompt. TrainJudge checks both ends.
 
 Check `trainjudge` is installed before using this skill: `trainjudge --version`.
-If it isn't, tell the user how to install it: `pip install "trainjudge[mlx] @ git+https://github.com/Himanshukurrey/trainjudge"`
-on an Apple Silicon Mac, or `[cuda]` instead of `[mlx]` on Windows/Linux with an NVIDIA GPU (after installing PyTorch with CUDA), and proceed
+If it isn't, tell the user how to install it: `pip install "trainjudge[mlx]"`
+on an Apple Silicon Mac, or `pip install "trainjudge[cuda]"` on Windows/Linux with an NVIDIA GPU (after installing PyTorch with CUDA), and proceed
 without it rather than blocking on it. Training and evals run on MLX (Apple Silicon)
 or PyTorch (CUDA, MPS or CPU; `--backend auto` picks); `diagnose` and `audit` run
 anywhere. Users with no GPU can use `notebooks/trainjudge_colab.ipynb` on Colab.
@@ -66,9 +66,21 @@ which limits regressions. `--dry-run` prepares everything without training.
 trainjudge verify <run-dir>   # add --db <database> for SQL tasks
 ```
 
-The task (SQL or JSON) is detected from the test split. For SQL tasks, `--db` is
-the SQLite database (or `.sql` script) the queries run against; it's only needed the
-first time. JSON tasks need nothing else.
+The task is detected from the test split: SQL (execution accuracy), JSON objects
+(exact match) or labels (classification accuracy, with macro-F1 and per-label F1).
+For SQL tasks, `--db` is the SQLite database (or `.sql` script) the queries run
+against; it's only needed the first time. JSON and label tasks need nothing else.
+
+For anything else (prose answers, code, numbers within a tolerance), `verify` says
+there's no automatic eval. Then write a scorer with the user: a Python function
+`score(prompt, output, gold)` that returns True/False, or
+`{"correct": bool, "score": 0-1, "reason": str}` for partial credit. Pass it with
+`--scorer path/to/scorer.py:score`; it's recorded, so later runs reuse it.
+`--scorer trainjudge.scorers.key_facts` (every number and most content words of the
+gold answer must appear) is a built-in starting point for prose; its source is in the
+installed package under `trainjudge/scorers/`. Show the user the scorer before relying
+on it, and never write one that always passes: the verdict is only as honest as the
+scorer.
 
 **5. Report the verdict honestly. Don't override it with the loss curve:**
 
@@ -119,8 +131,8 @@ notification when a job finishes.
 
 The diagnosis is a transparent heuristic, not a guarantee, and mixed goals
 (part knowledge, part format) are common. `eval` and `verify` score SQL
-(execution accuracy) and JSON objects (exact match); free-form prose answers
-aren't scored automatically yet. The regression suite is small (60 prompts)
+(execution accuracy), JSON objects (exact match) and labels (accuracy)
+automatically; everything else needs a `--scorer`. The regression suite is small (60 prompts)
 and catches broken instruction-following and formatting, not subtle capability
 loss. Run folders contain examples from the test split, so treat them as
 being as sensitive as the dataset.
