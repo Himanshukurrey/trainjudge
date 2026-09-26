@@ -45,6 +45,10 @@ Full details: [skills/trainjudge/SKILL.md](skills/trainjudge/SKILL.md).
 
 ## Working on this repository
 
+- `main` is protected: never push to it. Work on a branch, open a pull request, and
+  let the maintainer review and merge it. CI (lint, demo data, Linux and Windows tests)
+  must pass before a PR can merge.
+
 - Setup: `pip install -e ".[dev]"` (add `mlx` on an Apple Silicon Mac, or `cuda` for the PyTorch backend).
 - Before finishing a change, run `pytest`, `ruff check .`, `ruff format --check .` and `mypy`.
 - Tests must not download models or need `mlx-lm` or `torch`, except
