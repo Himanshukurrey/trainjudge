@@ -22,7 +22,8 @@
 ### More agents
 
 - **Cursor rule** (`.cursor/rules/trainjudge.mdc`) and a **Gemini CLI extension**
-  (`gemini-extension.json`, loading the skill as context). `AGENTS.md` and the skill now
+  (`gemini-extension.json`; Gemini discovers the skill itself). Codex installs the
+  plugin from this repo's marketplace. `AGENTS.md` and the skill now
   install from PyPI and explain custom scorers. A test keeps all of them in sync.
 
 ### Fixes

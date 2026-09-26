@@ -47,10 +47,13 @@ def test_cursor_rule_is_agent_requested():
     assert "alwaysApply: false" in front.group(1)
 
 
-def test_gemini_extension_loads_the_skill():
+def test_gemini_extension_uses_the_skill_not_a_context_file():
+    # Gemini CLI discovers skills/<name>/SKILL.md itself and loads it on demand; a
+    # contextFileName pointing at it too would put it in every session's context.
     manifest = json.loads((ROOT / "gemini-extension.json").read_text(encoding="utf-8"))
     assert manifest["name"] == "trainjudge"
-    assert (ROOT / manifest["contextFileName"]).is_file()
+    assert "contextFileName" not in manifest
+    assert (ROOT / "skills" / "trainjudge" / "SKILL.md").is_file()
 
 
 def test_versions_match():

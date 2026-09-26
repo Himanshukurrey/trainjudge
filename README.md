@@ -150,9 +150,9 @@ these gives the agent the same workflow as the Claude Code skill:
 
 | Agent | Setup |
 |---|---|
-| Codex | Copy [skills/trainjudge/](skills/trainjudge/) into `~/.codex/skills/`, or add the "Using TrainJudge" section of [AGENTS.md](AGENTS.md) to your project's `AGENTS.md` |
+| Codex | `codex plugin marketplace add Himanshukurrey/trainjudge`, then `codex plugin add trainjudge@trainjudge`. Or copy [skills/trainjudge/](skills/trainjudge/) into `~/.codex/skills/`, or add the "Using TrainJudge" section of [AGENTS.md](AGENTS.md) to your project's `AGENTS.md` |
 | Cursor | Copy [.cursor/rules/trainjudge.mdc](.cursor/rules/trainjudge.mdc) into your project's `.cursor/rules/` (Cursor applies it when you ask about fine-tuning) |
-| Gemini CLI | `gemini extensions install https://github.com/Himanshukurrey/trainjudge` ([gemini-extension.json](gemini-extension.json) loads the skill as context) |
+| Gemini CLI | `gemini extensions install https://github.com/Himanshukurrey/trainjudge` (Gemini picks up the skill and loads it when you ask about fine-tuning) |
 | Anything else that reads `AGENTS.md` | [AGENTS.md](AGENTS.md) |
 
 ## Quickstart
@@ -504,8 +504,11 @@ trainjudge-runs/2026-09-24-sql_generation-3
   mention of TrainJudge, Claude loaded the skill, checked the CLI was installed, ran
   `diagnose`, reported the knowledge gap with its evidence and asked before training.
 - The marketplace install path (`/plugin marketplace add`) hasn't been exercised yet.
-- `AGENTS.md`, the Cursor rule and the Gemini extension follow the same workflow but
-  haven't been tested in Codex, Cursor or Gemini CLI yet.
+- **Checked in Codex and Gemini CLI, without a live session:** Gemini CLI 0.61 validates
+  and installs the extension and registers the skill. In Codex 0.157, the plugin (from
+  this repo's marketplace), the copied skill and `AGENTS.md` all reach the model's
+  prompt (`codex debug prompt-input`). No real agent run has been tried in either, and
+  the Cursor rule hasn't been loaded in Cursor.
 
 ## Roadmap
 

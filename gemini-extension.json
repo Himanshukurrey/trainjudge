@@ -1,6 +1,5 @@
 {
   "name": "trainjudge",
   "version": "0.3.0",
-  "description": "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss.",
-  "contextFileName": "skills/trainjudge/SKILL.md"
+  "description": "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
 }
