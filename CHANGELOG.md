@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 (2026-09-27)
+
+### Fixes
+
+- The README on PyPI shows the logo and demo GIFs, and its links work: the copy sent to PyPI
+  points relative links and images at GitHub (the repo is now public). The README in the
+  repo is unchanged.
+
 ## 0.3.0 (2026-09-26)
 
 ### Verify any task, not just SQL and JSON

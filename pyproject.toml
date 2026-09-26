@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-fancy-pypi-readme>=24"]
 build-backend = "hatchling.build"
 
 [project]
 name = "trainjudge"
-version = "0.3.0"
+version = "0.3.1"
 description = "Decide whether fine-tuning is the right fix, then verify it actually worked — on task metrics, not training loss."
-readme = "README.md"
+dynamic = ["readme"]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.10"
@@ -53,6 +53,34 @@ Issues = "https://github.com/Himanshukurrey/trainjudge/issues"
 
 [project.scripts]
 trainjudge = "trainjudge.cli:main"
+
+# PyPI can't resolve the README's relative links and images, so the copy sent to PyPI
+# points them at GitHub. The README in the repo stays relative.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# HTML images: <img src="..."> and <source srcset="...">
+pattern = '(src|srcset)="(?!https?://|#)([^"]+)"'
+replacement = '\g<1>="https://raw.githubusercontent.com/Himanshukurrey/trainjudge/main/\g<2>"'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# Markdown images: ![alt](path)
+pattern = '!\[([^\]]*)\]\((?!https?://|#)([^)]+)\)'
+replacement = '![\g<1>](https://raw.githubusercontent.com/Himanshukurrey/trainjudge/main/\g<2>)'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# HTML links: <a href="...">
+pattern = 'href="(?!https?://|#|mailto:)([^"]+)"'
+replacement = 'href="https://github.com/Himanshukurrey/trainjudge/blob/main/\g<1>"'
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# Markdown links: [text](path)
+pattern = '(?<!!)\[([^\]]*)\]\((?!https?://|#|mailto:)([^)]+)\)'
+replacement = '[\g<1>](https://github.com/Himanshukurrey/trainjudge/blob/main/\g<2>)'
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trainjudge"]
