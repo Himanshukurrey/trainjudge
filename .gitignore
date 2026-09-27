@@ -15,3 +15,6 @@ adapters/
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Local diagrams and their visual-check output (not part of the package)
+docs/diagrams/
