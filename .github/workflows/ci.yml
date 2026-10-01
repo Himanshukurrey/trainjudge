@@ -92,7 +92,7 @@ jobs:
           python-version: "3.12"
 
       - name: Cache the tiny test model
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
           key: hf-smollm2-135m-instruct
